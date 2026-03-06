@@ -142,7 +142,24 @@ Helps users take preventive maintenance actions
 
 Generates voice responses using text-to-speech
 
-Makes the system more user-friendly, especially during emergencies --- ##
+Makes the system more user-friendly, especially during emergencies 
+
+
+##🧠 Dataset Used
+### AI4I 2020 Predictive Maintenance Dataset
+
+This project uses the AI4I 2020 Predictive Maintenance Dataset, a well-known dataset used for machine learning research in predictive maintenance.
+
+The dataset contains simulated manufacturing machine data such as:
+
+    Air temperature
+    Process temperature
+    Rotational speed
+    Torque
+    Tool wear
+    Failure indicators
+
+These parameters are used to train the XGBoost predictive model that identifies possible failure conditions.
 
  # **Tech Stack**
 
