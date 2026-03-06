@@ -108,27 +108,40 @@ Helps users quickly locate the closest repair service
 
 ### 🔧 Nearest Mechanic Finder 
 Detects mechanics based on the user’s location 
-Displays mechanic information such as: 
+
+Displays mechanic information such as:
+
      Name 
      Contact details 
      Distance from the user 
      Location on the map 
+     
 ### 🚘 Vehicle Information 
 Stores and displays important vehicle details such as: 
+
      Vehicle model 
      Engine information 
      Usage data 
      Performance metrics
      
 ### 📍 Location Tracking 
+
 Tracks the real-time location of the vehicle 
+
 Helps users easily identify their position and nearby services 
 
 ### 🤖 Vehicle Failure Prediction 
+
 Uses a **machine learning model** to analyze vehicle data 
+
 Predicts possible **vehicle component failures** 
+
 Helps users take preventive maintenance actions 
-### 🎙️ Voice Response System - Generates voice responses using **text-to-speech** 
+
+### 🎙️ Voice Response System 
+
+Generates voice responses using text-to-speech
+
 Makes the system more user-friendly, especially during emergencies --- ##
 
  # **Tech Stack**
