@@ -4,20 +4,16 @@
 https://github.com/user-attachments/assets/51cc60b9-e325-4f00-b497-8fc17d92ff90
 
 
-# **Autonomous Predictive Bike Maintenance — Agentic AI System**
+# **Autonomous Predictive Maintenance for Vehicles — Agentic AI System**
 
 🏍️ Prevent Failures Before They Happen: 200–500 km Early
 
-A next-generation agentic AI platform that predicts critical two-wheeler failures in advance, turning emergency breakdowns into planned, low-cost maintenance.
+A next-generation agentic AI platform that predicts critical vehicles failures in advance, turning emergency breakdowns into planned, low-cost maintenance.
 
 This system supports individual riders, workshops, fleets, and OEMs, running entirely as a scalable cloud service.
 
 
  # **The Problem (₹198B Lost Annually)**
-India’s Two-Wheeler Crisis by the Numbers
-
-124 million riders depend on 2-wheelers daily
-
 ₹198 billion annual productivity loss from breakdowns
 
 1,000–2,000 preventable deaths/year linked to maintenance failures
@@ -31,7 +27,7 @@ Roadside emergencies → unsafe + expensive + stressful
 Breakdowns are predictable — but today, they are not predicted.
 
 
-# **Proposed Solution: Agentic AI for Predictive Bike Maintenance**
+# **Proposed Solution: Agentic AI Autonomous Predictive Maintenance for Vehicles**
 
 An agentic AI system that predicts failures 200–500 km before they occur using telemetry, driving patterns, and historical data.
 
@@ -56,13 +52,7 @@ Reduces repair cost & eliminates surprise breakdowns
 
 1️⃣ Input Sources
 
-Telematics / IoT sensor data (temperature, vibration, RPM, speed, GPS)
-
-Rider behavior (routes, harsh braking, daily km)
-
-Service history & warranty data
-
-Environmental factors (dust, humidity, terrain)
+AI4I 2020 Predictive Maintenance Dataset (temperature, vibration, RPM, speed, GPS)
 
 2️⃣ Processing Pipeline
 
@@ -82,7 +72,7 @@ Environment-adjusted wear factors
 
 🤖  ML Risk Scoring
 
-XGBoost / LightGBM models
+XGBoost models
 
 Anomaly detection for vibration, heat, noise
 
@@ -100,67 +90,64 @@ Diagnostic reasoner: component-level root cause
 
 📤  Output
 
-Component-wise risk score
+Nearest Mechanic
 
-ETA to failure
+
 
 Recommended action
 
 Automatic notifications + booking
 
- # **Tech Stack**
+## ✨ Features 
+### 🗺️ Interactive Map 
+Displays the user's **current live location** 
+Shows **nearby mechanics** on the map 
+Helps users quickly locate the **closest repair service** 
+### 🔧 Nearest Mechanic Finder 
+Detects mechanics based on the user’s location 
+Displays mechanic information such as: - Name - Contact details - Distance from the user - Location on the map 
+### 🚘 Vehicle Information 
+Stores and displays important vehicle details such as: - Vehicle model - Engine information - Usage data - Performance metrics ### 📍 Location Tracking - Tracks the **real-time location of the vehicle** - Helps users easily identify their position and nearby services 
+### 🤖 Vehicle Failure Prediction 
+Uses a **machine learning model** to analyze vehicle data 
+Predicts possible **vehicle component failures** 
+Helps users take preventive maintenance actions 
+### 🎙️ Voice Response System - Generates voice responses using **text-to-speech** 
+Makes the system more user-friendly, especially during emergencies --- ##
 
-Backend
+ # **Tech Stack**
 
 Python
 
-Flask / FastAPI
+OpenRouter (LLM Gateway)
 
-Overpass API
+Deepseek Chat (LLM Model)
 
-Leaflet API
+Google Text-to-Speech (gTTS)
 
-REST APIs (JSON)
+Leaflet.js (Maps)  
 
-Machine Learning
+CartoDB (Map Tiles) 
 
-Scikit-learn
+OpenStreetMap Nominatim (Geocoding) 
 
-XGBoost / LightGBM
+Overpass API (POI Data)
 
-Time-series forecasting
+MacroDroid (Mobile Automation)
 
-Anomaly detection models
+Flask (Web Framework)  
 
-LLM + Agent Layer
+Flask-CORS (API Middleware)
 
-LangChain-style orchestration
+LangChain (LLM Orchestration)
 
-RAG for service history retrieval
+LangChain-OpenAI (LLM Integration)
+   
+Three.js r128 (3D Graphics) 
 
-GPT-4-class / DeepSeek-chat-class reasoning models
+Web Audio API (Audio)
 
-Data & Infrastructure
-
-PostgreSQL (structured data)
-
-Redis (caching, queues)
-
-Docker containers
-
-Cloud deployment (scales automatically)
-
-Integrations with:
-
-Telematics/IoT APIs
-
-Workshop CRM
-
-Booking systems
-
-WhatsApp/SMS alerts
-
-Web dashboard
+Speech Synthesis API (TTS Fallback)  
 
 
  # **Scalability**
@@ -181,24 +168,12 @@ Predictive models retrain automatically as data grows
 
 Scalability = more bikes, not more complexity.
 
-# **Frontend UI**
-
-![Adobe Express - Autonomous Predictive Maintainence Video (2)](https://github.com/user-attachments/assets/b911afc8-0795-4661-bb3e-e8273b54a854)
-
-# **Working Backend**
-
-
-<img width="1408" height="736" alt="Gemini_Generated_Image_ej8lraej8lraej8l (1)" src="https://github.com/user-attachments/assets/2ad92f37-d05d-40a8-9712-49d51ba8bbbb" />
-
-
-
-
  # **Local Setup**
 
 1️⃣ Clone the Repository
 
-git clone https://github.com/KritagyaMadaan/EY-Project.git
-cd Claude-project
+git clone https://github.com/KritagyaMadaan/Kingkong-Astrava-Hackathon.git
+cd Kingkong-Astrava-Hackathon
 
 2️⃣ Create a .env File for Secrets / API Keys
 
@@ -226,10 +201,10 @@ Your backend will run at:
 http://localhost:5000
 
 5️⃣ Run Frontend 
-Open okok.html directly in your browser
+Open fleet (2).html directly in your browser
 
 Double-click:
-okok.html
+fleet (2).html
 
 # **API Key Setup (Important)**
 
