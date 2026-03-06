@@ -100,14 +100,30 @@ Automatic notifications + booking
 
 ## ✨ Features 
 ### 🗺️ Interactive Map 
-Displays the user's **current live location** 
-Shows **nearby mechanics** on the map 
-Helps users quickly locate the **closest repair service** 
+Displays the user's current live location 
+
+Shows nearby mechanicson the map
+
+Helps users quickly locate the closest repair service 
+
 ### 🔧 Nearest Mechanic Finder 
 Detects mechanics based on the user’s location 
-Displays mechanic information such as: - Name - Contact details - Distance from the user - Location on the map 
+Displays mechanic information such as: 
+     Name 
+     Contact details 
+     Distance from the user 
+     Location on the map 
 ### 🚘 Vehicle Information 
-Stores and displays important vehicle details such as: - Vehicle model - Engine information - Usage data - Performance metrics ### 📍 Location Tracking - Tracks the **real-time location of the vehicle** - Helps users easily identify their position and nearby services 
+Stores and displays important vehicle details such as: 
+     Vehicle model 
+     Engine information 
+     Usage data 
+     Performance metrics
+     
+### 📍 Location Tracking 
+Tracks the real-time location of the vehicle 
+Helps users easily identify their position and nearby services 
+
 ### 🤖 Vehicle Failure Prediction 
 Uses a **machine learning model** to analyze vehicle data 
 Predicts possible **vehicle component failures** 
