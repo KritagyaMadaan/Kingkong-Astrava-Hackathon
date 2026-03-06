@@ -72,7 +72,7 @@ Environment-adjusted wear factors
 
 🤖  ML Risk Scoring
 
-XGBoost models
+uses trained XGBoost models
 
 Anomaly detection for vibration, heat, noise
 
@@ -145,7 +145,7 @@ Generates voice responses using text-to-speech
 Makes the system more user-friendly, especially during emergencies 
 
 
-##🧠 Dataset Used
+## 🧠 Dataset Used
 ### AI4I 2020 Predictive Maintenance Dataset
 
 This project uses the AI4I 2020 Predictive Maintenance Dataset, a well-known dataset used for machine learning research in predictive maintenance.
