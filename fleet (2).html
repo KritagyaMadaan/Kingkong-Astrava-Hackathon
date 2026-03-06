@@ -1,0 +1,2063 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleet Brain — Autonomous Command</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --amber: #f0a500;
+            --amber-dim: #a87000;
+            --amber-glow: rgba(240, 165, 0, 0.15);
+            --amber-border: rgba(240, 165, 0, 0.25);
+            --red: #ff3b3b;
+            --red-glow: rgba(255, 59, 59, 0.2);
+            --green: #00ff88;
+            --green-dim: rgba(0, 255, 136, 0.15);
+            --steel: #0a0c0f;
+            --steel-mid: #111418;
+            --steel-light: #1a1f26;
+            --steel-border: rgba(255, 255, 255, 0.06);
+            --text-primary: #e8dcc8;
+            --text-dim: #6b7280;
+            --text-muted: #3d4450;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--steel);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* ── NOISE OVERLAY ─────────────────────────── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+            pointer-events: none;
+            z-index: 9999;
+            opacity: 0.4;
+        }
+
+        /* ── SIDEBAR ───────────────────────────────── */
+        .sidebar {
+            width: 64px;
+            background: var(--steel-mid);
+            border-right: 1px solid var(--amber-border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 16px 0;
+            z-index: 200;
+            flex-shrink: 0;
+        }
+
+        .sidebar-logo {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65em;
+            font-weight: 900;
+            color: var(--amber);
+            letter-spacing: 0.05em;
+            border: 1px solid var(--amber-border);
+            border-radius: 6px;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .nav-item {
+            width: 44px;
+            height: 44px;
+            margin-bottom: 6px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.25s;
+            color: var(--text-dim);
+            font-size: 1.3em;
+            position: relative;
+            border: 1px solid transparent;
+        }
+
+        .nav-item:hover,
+        .nav-item.active {
+            background: var(--amber-glow);
+            border-color: var(--amber-border);
+            color: var(--amber);
+            box-shadow: 0 0 20px rgba(240, 165, 0, 0.1);
+        }
+
+        .nav-tooltip {
+            position: absolute;
+            left: 54px;
+            background: var(--steel-light);
+            color: var(--amber);
+            border: 1px solid var(--amber-border);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            letter-spacing: 0.1em;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+
+        .nav-item:hover .nav-tooltip {
+            opacity: 1;
+        }
+
+        .nav-divider {
+            width: 30px;
+            height: 1px;
+            background: var(--steel-border);
+            margin: 10px 0;
+        }
+
+        /* ── MAIN CONTENT ──────────────────────────── */
+        #content-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* ── HEADER ────────────────────────────────── */
+        .header {
+            height: 52px;
+            background: var(--steel-mid);
+            border-bottom: 1px solid var(--amber-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+            flex-shrink: 0;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.95em;
+            font-weight: 700;
+            color: var(--amber);
+            letter-spacing: 0.15em;
+        }
+
+        .header-sub {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+            color: var(--text-dim);
+            letter-spacing: 0.08em;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .live-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+            color: var(--green);
+            letter-spacing: 0.1em;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--green);
+            border-radius: 50%;
+            animation: pulse-green 2s infinite;
+        }
+
+        @keyframes pulse-green {
+
+            0%,
+            100% {
+                opacity: 1;
+                box-shadow: 0 0 6px var(--green);
+            }
+
+            50% {
+                opacity: 0.4;
+                box-shadow: none;
+            }
+        }
+
+        .scan-timer {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+            color: var(--text-dim);
+            letter-spacing: 0.05em;
+        }
+
+        /* ── DASHBOARD LAYOUT ─────────────────────── */
+        #dashboard {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* ── FLEET PANEL ───────────────────────────── */
+        .fleet-panel {
+            width: 230px;
+            border-right: 1px solid var(--steel-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .panel-header {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--steel-border);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .panel-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            color: var(--text-dim);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        .panel-count {
+            margin-left: auto;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            color: var(--amber);
+            background: var(--amber-glow);
+            border: 1px solid var(--amber-border);
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        .fleet-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .fleet-list::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .fleet-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .fleet-list::-webkit-scrollbar-thumb {
+            background: var(--amber-dim);
+            border-radius: 2px;
+        }
+
+        .fleet-card {
+            background: var(--steel-light);
+            border: 1px solid var(--steel-border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .fleet-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--amber-dim);
+            border-radius: 2px 0 0 2px;
+            transition: background 0.3s;
+        }
+
+        .fleet-card:hover {
+            border-color: var(--amber-border);
+            background: rgba(240, 165, 0, 0.04);
+        }
+
+        .fleet-card.alert {
+            border-color: rgba(255, 59, 59, 0.4);
+            background: rgba(255, 59, 59, 0.05);
+            animation: card-pulse 2s infinite;
+        }
+
+        .fleet-card.alert::before {
+            background: var(--red);
+        }
+
+        @keyframes card-pulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 rgba(255, 59, 59, 0);
+            }
+
+            50% {
+                box-shadow: 0 0 12px rgba(255, 59, 59, 0.2);
+            }
+        }
+
+        .card-name {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.95em;
+            letter-spacing: 0.05em;
+            margin-bottom: 3px;
+        }
+
+        .card-reg {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            color: var(--text-dim);
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+        }
+
+        .card-status {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            letter-spacing: 0.05em;
+        }
+
+        .status-dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--green);
+            flex-shrink: 0;
+        }
+
+        .fleet-card.alert .status-dot {
+            background: var(--red);
+            animation: pulse-red 1s infinite;
+        }
+
+        @keyframes pulse-red {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.3;
+            }
+        }
+
+        .card-status-text {
+            color: var(--green);
+        }
+
+        .fleet-card.alert .card-status-text {
+            color: var(--red);
+        }
+
+        /* ── CENTER 3D ─────────────────────────────── */
+        .center-canvas {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ── RIGHT PANEL ───────────────────────────── */
+        .right-panel {
+            width: 260px;
+            border-left: 1px solid var(--steel-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        /* LOG */
+        .log-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .log-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .log-body::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .log-body::-webkit-scrollbar-thumb {
+            background: var(--amber-dim);
+        }
+
+        .log-entry {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+            color: var(--text-dim);
+            letter-spacing: 0.03em;
+            padding: 6px 8px;
+            background: var(--steel-light);
+            border-radius: 4px;
+            border-left: 2px solid var(--steel-border);
+            line-height: 1.5;
+            animation: log-in 0.3s ease;
+        }
+
+        .log-entry.alert-log {
+            color: var(--red);
+            border-left-color: var(--red);
+            background: rgba(255, 59, 59, 0.05);
+        }
+
+        .log-entry.info-log {
+            color: var(--amber);
+            border-left-color: var(--amber-dim);
+            background: var(--amber-glow);
+        }
+
+        @keyframes log-in {
+            from {
+                opacity: 0;
+                transform: translateX(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        /* MACRODROID STATUS */
+        .macro-section {
+            border-top: 1px solid var(--steel-border);
+            padding: 14px 16px;
+        }
+
+        .macro-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.55em;
+            color: var(--text-muted);
+            letter-spacing: 0.12em;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+        }
+
+        .macro-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.62em;
+            color: var(--text-dim);
+        }
+
+        .macro-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            transition: all 0.3s;
+            flex-shrink: 0;
+        }
+
+        .macro-indicator.active {
+            background: var(--amber);
+            box-shadow: 0 0 8px var(--amber);
+        }
+
+        /* SCAN FOOTER */
+        .scan-footer {
+            border-top: 1px solid var(--steel-border);
+            padding: 14px 16px;
+        }
+
+        .scan-progress {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+
+        .scan-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.55em;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            flex-shrink: 0;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 3px;
+            background: var(--steel-light);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--amber-dim), var(--amber));
+            border-radius: 2px;
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .next-scan {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.55em;
+            color: var(--text-muted);
+            letter-spacing: 0.06em;
+            text-align: right;
+        }
+
+        /* ── MAP OVERLAY ───────────────────────────── */
+        #map-overlay {
+            position: fixed;
+            inset: 0;
+            left: 64px;
+            background: var(--steel);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        #map-overlay.active {
+            display: flex;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .map-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .map-title-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .map-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1em;
+            font-weight: 700;
+            color: var(--amber);
+            letter-spacing: 0.15em;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.62em;
+            color: var(--green);
+            letter-spacing: 0.08em;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: var(--green-dim);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .status-pill.danger {
+            color: var(--red);
+            background: var(--red-glow);
+            border-color: rgba(255, 59, 59, 0.3);
+        }
+
+        .close-map {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            background: var(--steel-light);
+            border: 1px solid var(--steel-border);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .close-map:hover {
+            border-color: var(--amber-border);
+            color: var(--amber);
+        }
+
+        .map-viewport {
+            flex: 1;
+            display: flex;
+            gap: 16px;
+            min-height: 0;
+        }
+
+        .map-canvas-container {
+            flex: 1;
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid var(--steel-border);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .map-hud {
+            position: absolute;
+            top: 14px;
+            left: 14px;
+            z-index: 1000;
+            background: rgba(10, 12, 15, 0.92);
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--amber-border);
+            backdrop-filter: blur(8px);
+        }
+
+        .hud-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            color: var(--text-dim);
+            letter-spacing: 0.1em;
+            margin-bottom: 3px;
+        }
+
+        #tracking-unit {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: var(--amber);
+            letter-spacing: 0.05em;
+        }
+
+        .map-search {
+            position: absolute;
+            top: 14px;
+            right: 14px;
+            z-index: 1000;
+            display: flex;
+            gap: 6px;
+        }
+
+        .map-search input {
+            background: rgba(10, 12, 15, 0.92);
+            border: 1px solid var(--steel-border);
+            color: var(--text-primary);
+            padding: 8px 12px;
+            border-radius: 6px;
+            width: 210px;
+            outline: none;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+            letter-spacing: 0.05em;
+            backdrop-filter: blur(8px);
+            transition: border-color 0.2s;
+        }
+
+        .map-search input:focus {
+            border-color: var(--amber-border);
+        }
+
+        .map-search button {
+            background: var(--amber-dim);
+            color: var(--steel);
+            border: none;
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+            font-weight: 700;
+            letter-spacing: 0.1em;
+            transition: background 0.2s;
+        }
+
+        .map-search button:hover {
+            background: var(--amber);
+        }
+
+        /* MECHANIC SIDEBAR */
+        .mechanic-sidebar {
+            width: 300px;
+            background: var(--steel-mid);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--steel-border);
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .mechanic-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--steel-border);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            color: var(--text-dim);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+        }
+
+        #mechanic-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        #mechanic-list::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        #mechanic-list::-webkit-scrollbar-thumb {
+            background: var(--amber-dim);
+        }
+
+        .mechanic-item {
+            background: var(--steel-light);
+            margin-bottom: 8px;
+            border-radius: 8px;
+            padding: 12px;
+            border-left: 3px solid var(--amber-dim);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .mechanic-item:hover {
+            border-left-color: var(--amber);
+            background: rgba(240, 165, 0, 0.04);
+            transform: translateX(3px);
+        }
+
+        .mechanic-info h4 {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 600;
+            font-size: 0.85em;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+            letter-spacing: 0.03em;
+        }
+
+        .mechanic-info p {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.58em;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+
+        .mechanic-meta {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.58em;
+            color: var(--amber);
+        }
+
+        /* LEAFLET OVERRIDES */
+        .leaflet-popup-content-wrapper {
+            background: var(--steel-mid) !important;
+            color: var(--text-primary) !important;
+            border: 1px solid var(--amber-border) !important;
+            border-radius: 8px !important;
+            font-family: 'Share Tech Mono', monospace !important;
+            font-size: 0.7em !important;
+        }
+
+        .leaflet-popup-tip {
+            background: var(--steel-mid) !important;
+        }
+
+        /* ── KEYFRAME UTILS ────────────────────────── */
+        @keyframes scan-sweep {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .scanning-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            border: 1px solid transparent;
+            border-top-color: var(--amber);
+            animation: scan-sweep 1.5s linear infinite;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .scanning-ring.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-logo">FB</div>
+
+        <div class="nav-item active" onclick="toggleView('dashboard')" id="nav-dash">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="3" width="7" height="7" rx="1" />
+                <rect x="14" y="3" width="7" height="7" rx="1" />
+                <rect x="3" y="14" width="7" height="7" rx="1" />
+                <rect x="14" y="14" width="7" height="7" rx="1" />
+            </svg>
+            <div class="nav-tooltip">DASHBOARD</div>
+        </div>
+
+        <div class="nav-item" onclick="toggleView('map')" id="nav-map">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+                <line x1="8" y1="2" x2="8" y2="18" />
+                <line x1="16" y1="6" x2="16" y2="22" />
+            </svg>
+            <div class="nav-tooltip">MAP EXPLORER</div>
+        </div>
+
+        <div class="nav-divider"></div>
+
+        <div class="nav-item" style="margin-top:auto;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14" />
+            </svg>
+            <div class="nav-tooltip">SETTINGS</div>
+        </div>
+    </div>
+
+    <!-- CONTENT AREA -->
+    <div id="content-area">
+        <!-- HEADER -->
+        <div class="header">
+            <div class="header-left">
+                <div>
+                    <div class="header-title">FLEET BRAIN</div>
+                    <div class="header-sub">AUTONOMOUS COMMAND SYSTEM · v2.4</div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div class="live-badge">
+                    <div class="live-dot"></div>
+                    LIVE
+                </div>
+                <div class="scan-timer" id="header-timer">NEXT SCAN: 30s</div>
+            </div>
+        </div>
+
+        <!-- DASHBOARD -->
+        <div id="dashboard">
+            <!-- FLEET PANEL -->
+            <div class="fleet-panel">
+                <div class="panel-header">
+                    <div class="panel-label">FLEET UNITS</div>
+                    <div class="panel-count" id="fleet-count">12</div>
+                </div>
+                <div class="fleet-list" id="fleet-list-container">
+                    <!-- Dynamic Generation -->
+                </div>
+            </div>
+
+            <!-- CENTER 3D -->
+            <div class="center-canvas" id="three-container">
+                <div class="scanning-ring" id="scan-ring"></div>
+            </div>
+
+            <!-- RIGHT PANEL -->
+            <div class="right-panel">
+                <div class="panel-header">
+                    <div class="panel-label">SYSTEM LOG</div>
+                </div>
+                <div class="log-section">
+                    <div class="log-body" id="log-body">
+                        <div class="log-entry info-log">▶ System initialized</div>
+                        <div class="log-entry">◦ Awaiting first scan cycle...</div>
+                    </div>
+                </div>
+
+                <!-- MacroDroid Status -->
+                <div class="macro-section">
+                    <div class="macro-label">MACRODROID TRIGGER</div>
+                    <div class="macro-status">
+                        <div class="macro-indicator" id="macro-indicator"></div>
+                        <span id="macro-text">STANDBY</span>
+                    </div>
+                </div>
+
+                <!-- Scan progress -->
+                <div class="scan-footer">
+                    <div class="scan-progress">
+                        <div class="scan-label">SCAN</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                    </div>
+                    <div class="next-scan" id="next-scan-text">INITIALIZING...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAP OVERLAY -->
+    <div id="map-overlay">
+        <div class="map-header">
+            <div class="map-title-row">
+                <div class="map-title">LIVE MAP</div>
+                <div class="status-pill" id="system-status">
+                    <div class="live-dot"></div>
+                    SYSTEM OPERATIONAL
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+                <button class="close-map" onclick="findMechanics(userLocation[0], userLocation[1])" style="border-color:rgba(240,165,0,0.4);color:var(--amber);">🛠 FIND MECHANICS</button>
+                <button class="close-map" onclick="toggleView('dashboard')">← BACK TO DASHBOARD</button>
+            </div>
+        </div>
+
+        <div class="map-viewport">
+            <div class="map-canvas-container">
+                <div class="map-hud">
+                    <div class="hud-label">📡 TRACKING</div>
+                    <div id="tracking-unit">FLEET ACTIVE</div>
+                </div>
+                <div class="map-search">
+                    <input type="text" id="city-search" placeholder="Search city...">
+                    <button onclick="searchLocation()">SET</button>
+                </div>
+                <div id="map"></div>
+            </div>
+
+            <div class="mechanic-sidebar">
+                <div class="mechanic-header">🛠 NEARBY SERVICE CENTERS</div>
+                <div id="mechanic-list">
+                    <div
+                        style="text-align:center; padding: 40px 20px; color: var(--text-muted); font-family: 'Share Tech Mono',monospace; font-size:0.7em; letter-spacing:0.08em; line-height:1.8;">
+                        NO CRITICAL ISSUES<br>DETECTED YET
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VEHICLE DETAIL PANEL -->
+    <div id="vehicle-panel">
+        <div class="vp-header">
+            <div>
+                <div class="vp-name" id="vp-name">—</div>
+                <div class="vp-reg" id="vp-reg">—</div>
+            </div>
+            <button class="vp-close" onclick="closeVehiclePanel()">✕</button>
+        </div>
+        <div class="vp-body">
+            <div id="vp-status-badge" class="vp-status-badge ok">
+                <div id="vp-status-dot" style="width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;"></div>
+                <span id="vp-status-text">NOMINAL</span>
+            </div>
+
+            <div class="vp-section-label">TELEMETRY</div>
+            <div class="vp-gauges">
+                <div class="vp-gauge">
+                    <div class="vp-gauge-label">⛽ FUEL LEVEL</div>
+                    <div class="vp-gauge-val" id="vp-fuel">—</div>
+                    <div class="vp-gauge-bar"><div class="vp-gauge-fill" id="vp-fuel-bar" style="background:var(--green);width:0%"></div></div>
+                </div>
+                <div class="vp-gauge">
+                    <div class="vp-gauge-label">🔋 BATTERY</div>
+                    <div class="vp-gauge-val" id="vp-batt">—</div>
+                    <div class="vp-gauge-bar"><div class="vp-gauge-fill" id="vp-batt-bar" style="background:var(--amber);width:0%"></div></div>
+                </div>
+                <div class="vp-gauge">
+                    <div class="vp-gauge-label">🌡 ENGINE TEMP</div>
+                    <div class="vp-gauge-val" id="vp-temp">—</div>
+                    <div class="vp-gauge-bar"><div class="vp-gauge-fill" id="vp-temp-bar" style="background:var(--amber);width:0%"></div></div>
+                </div>
+                <div class="vp-gauge">
+                    <div class="vp-gauge-label">🚗 SPEED</div>
+                    <div class="vp-gauge-val" id="vp-speed">—</div>
+                    <div class="vp-gauge-bar"><div class="vp-gauge-fill" id="vp-speed-bar" style="background:#4ecdc4;width:0%"></div></div>
+                </div>
+            </div>
+
+            <div class="vp-section-label">DIAGNOSTICS</div>
+            <div class="vp-issue-box">
+                <div class="vp-issue-title">DETECTED ISSUE</div>
+                <div class="vp-issue-val" id="vp-issue">Systems Nominal</div>
+            </div>
+            <div class="vp-issue-box">
+                <div class="vp-issue-title">FAILURE PROBABILITY</div>
+                <div class="vp-issue-val" id="vp-prob">0.0%</div>
+                <div class="vp-gauge-bar" style="margin-top:8px;"><div class="vp-gauge-fill" id="vp-prob-bar" style="background:var(--red);width:0%"></div></div>
+            </div>
+            <div class="vp-issue-box">
+                <div class="vp-issue-title">RISK LEVEL</div>
+                <div class="vp-issue-val" id="vp-risk">LOW</div>
+            </div>
+        </div>
+        <div class="vp-footer">
+            <div class="vp-btn" id="vp-map-btn" onclick="">📍 LOCATE ON MAP</div>
+            <div class="vp-btn secondary" onclick="closeVehiclePanel()">CLOSE</div>
+        </div>
+    </div>
+
+
+    <audio id="audio" style="display:none;" preload="auto"></audio>
+
+    <!-- VOICE UNLOCK OVERLAY -->
+    <div id="voice-unlock" style="
+        position:fixed;inset:0;z-index:99999;
+        background:rgba(10,12,15,0.96);
+        display:none; /* Hidden by default for automatic operation */
+        flex-direction:column;
+        align-items:center;justify-content:center;
+        backdrop-filter:blur(6px);
+        font-family:'Rajdhani',sans-serif;
+    ">
+        <div style="
+            border:1px solid rgba(240,165,0,0.3);border-radius:16px;
+            padding:48px 56px;text-align:center;max-width:420px;
+            background:rgba(17,20,24,0.9);
+            box-shadow:0 0 60px rgba(240,165,0,0.08);
+        ">
+            <div style="font-size:3em;margin-bottom:16px;">🔊</div>
+            <div
+                style="font-family:'Orbitron',sans-serif;font-size:1.1em;font-weight:700;color:#f0a500;letter-spacing:0.15em;margin-bottom:12px;">
+                VOICE ALERTS READY</div>
+            <div
+                style="font-family:'Share Tech Mono',monospace;font-size:0.7em;color:#6b7280;letter-spacing:0.06em;margin-bottom:32px;line-height:1.8;">
+                FLEET BRAIN will speak vehicle alerts<br>detected by the AI system.<br><br>Click to enable audio output.
+            </div>
+            <button onclick="unlockAudio()" style="
+                background:#f0a500;color:#0a0c0f;border:none;
+                padding:14px 36px;border-radius:8px;cursor:pointer;
+                font-family:'Orbitron',sans-serif;font-size:0.8em;
+                font-weight:700;letter-spacing:0.15em;
+            ">ACTIVATE VOICE SYSTEM</button>
+        </div>
+    </div>
+
+    <!-- VOICE ALERT TOAST -->
+    <div id="voice-toast" style="
+        position:fixed;bottom:24px;right:88px;z-index:10000;display:none;
+        background:rgba(17,20,24,0.97);border:1px solid rgba(255,59,59,0.4);
+        border-radius:12px;padding:16px 20px;min-width:300px;max-width:380px;
+        box-shadow:0 0 30px rgba(255,59,59,0.15);
+        font-family:'Rajdhani',sans-serif;
+    ">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+            <div id="toast-wave" style="display:flex;align-items:flex-end;gap:2px;height:20px;">
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+                <div class="wave-bar"></div>
+            </div>
+            <div
+                style="font-family:'Orbitron',sans-serif;font-size:0.7em;font-weight:700;color:#ff3b3b;letter-spacing:0.12em;">
+                SPEAKING ALERT</div>
+        </div>
+        <div id="toast-text" style="font-size:0.92em;color:#e8dcc8;letter-spacing:0.02em;line-height:1.5;"></div>
+        <div id="toast-owner"
+            style="font-family:'Share Tech Mono',monospace;font-size:0.6em;color:#6b7280;margin-top:6px;letter-spacing:0.08em;">
+        </div>
+    </div>
+
+    <style>
+        .wave-bar {
+            width: 3px;
+            background: #ff3b3b;
+            border-radius: 2px;
+            animation: wave-bounce 0.6s ease-in-out infinite;
+        }
+
+        .wave-bar:nth-child(1) {
+            animation-delay: 0s;
+            height: 6px
+        }
+
+        .wave-bar:nth-child(2) {
+            animation-delay: 0.1s;
+            height: 12px
+        }
+
+        .wave-bar:nth-child(3) {
+            animation-delay: 0.2s;
+            height: 18px
+        }
+
+        .wave-bar:nth-child(4) {
+            animation-delay: 0.1s;
+            height: 12px
+        }
+
+        .wave-bar:nth-child(5) {
+            animation-delay: 0s;
+            height: 6px
+        }
+
+        @keyframes wave-bounce {
+
+            0%,
+            100% {
+                transform: scaleY(0.4)
+            }
+
+            50% {
+                transform: scaleY(1)
+            }
+        }
+
+        @keyframes toast-slide {
+            from {
+                opacity: 0;
+                transform: translateY(16px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        #voice-toast.show {
+            animation: toast-slide 0.35s ease forwards;
+        }
+
+        /* ── VEHICLE DETAIL PANEL ──────────────────── */
+        #vehicle-panel {
+            position: fixed;
+            top: 52px; right: -360px;
+            width: 340px;
+            height: calc(100vh - 52px);
+            background: var(--steel-mid);
+            border-left: 1px solid var(--amber-border);
+            z-index: 500;
+            transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: -8px 0 40px rgba(0,0,0,0.5);
+        }
+        #vehicle-panel.open { right: 0; }
+
+        .vp-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--steel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .vp-name {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1em;
+            font-weight: 700;
+            color: var(--amber);
+            letter-spacing: 0.1em;
+        }
+        .vp-reg {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        .vp-close {
+            width: 30px; height: 30px;
+            border: 1px solid var(--steel-border);
+            border-radius: 6px;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 1em;
+            display: flex; align-items: center; justify-content: center;
+            transition: all 0.2s;
+        }
+        .vp-close:hover { border-color: var(--amber-border); color: var(--amber); }
+
+        .vp-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
+        .vp-body::-webkit-scrollbar { width: 3px; }
+        .vp-body::-webkit-scrollbar-thumb { background: var(--amber-dim); }
+
+        .vp-status-badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 5px 12px; border-radius: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em; letter-spacing: 0.08em;
+            margin-bottom: 16px;
+        }
+        .vp-status-badge.ok { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
+        .vp-status-badge.warn { background: rgba(255,165,0,0.15); color: #ffa502; border: 1px solid rgba(255,165,0,0.3); }
+        .vp-status-badge.crit { background: var(--red-glow); color: var(--red); border: 1px solid rgba(255,59,59,0.3); }
+
+        .vp-section-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.55em;
+            color: var(--text-muted);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            margin-top: 16px;
+        }
+
+        .vp-gauges {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 8px;
+        }
+        .vp-gauge {
+            background: var(--steel-light);
+            border: 1px solid var(--steel-border);
+            border-radius: 8px;
+            padding: 12px;
+        }
+        .vp-gauge-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.55em;
+            color: var(--text-dim);
+            letter-spacing: 0.08em;
+            margin-bottom: 4px;
+        }
+        .vp-gauge-val {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1em;
+            font-weight: 700;
+            color: var(--amber);
+        }
+        .vp-gauge-bar {
+            height: 3px;
+            background: var(--steel-border);
+            border-radius: 2px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .vp-gauge-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.6s ease;
+        }
+
+        .vp-issue-box {
+            background: var(--steel-light);
+            border: 1px solid var(--steel-border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+        }
+        .vp-issue-title {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            color: var(--text-dim);
+            letter-spacing: 0.08em;
+            margin-bottom: 6px;
+        }
+        .vp-issue-val {
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 0.95em;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .vp-footer {
+            padding: 14px 20px;
+            border-top: 1px solid var(--steel-border);
+            display: flex; gap: 8px;
+        }
+        .vp-btn {
+            flex: 1;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--amber-border);
+            background: var(--amber-glow);
+            color: var(--amber);
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            letter-spacing: 0.08em;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        .vp-btn:hover { background: var(--amber); color: var(--steel); }
+        .vp-btn.secondary { border-color: var(--steel-border); background: transparent; color: var(--text-dim); }
+        .vp-btn.secondary:hover { border-color: var(--amber-border); color: var(--amber); }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ── UI NAVIGATION ─────────────────────────────────────────
+        function toggleView(view) {
+            const overlay = document.getElementById('map-overlay');
+            document.getElementById('nav-dash').classList.remove('active');
+            document.getElementById('nav-map').classList.remove('active');
+
+            if (view === 'map') {
+                overlay.classList.add('active');
+                document.getElementById('nav-map').classList.add('active');
+                setTimeout(() => {
+                    map.invalidateSize();
+                    // Auto-load mechanics whenever map is opened
+                    if (mechanicMarkers.length === 0) {
+                        findMechanics(userLocation[0], userLocation[1]);
+                    }
+                }, 400);
+            } else {
+                overlay.classList.remove('active');
+                document.getElementById('nav-dash').classList.add('active');
+            }
+        }
+
+        // ── LOGGING ───────────────────────────────────────────────
+        const logBody = document.getElementById('log-body');
+        function addLog(msg, type = '') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const ts = new Date().toLocaleTimeString('en-IN', { hour12: false });
+            entry.textContent = `[${ts}] ${msg}`;
+            logBody.appendChild(entry);
+            logBody.scrollTop = logBody.scrollHeight;
+            // Keep last 30 entries
+            while (logBody.children.length > 30) logBody.removeChild(logBody.firstChild);
+        }
+
+        // ── 3D SCENE ──────────────────────────────────────────────
+        const originalAssign = window.location.assign;
+        window.location.assign = function () { if (!window.redirectBlocked) originalAssign.apply(this, arguments); };
+        window.redirectBlocked = true;
+
+        const threeContainer = document.getElementById('three-container');
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, threeContainer.clientWidth / threeContainer.clientHeight, 0.1, 1000);
+        camera.position.set(0, 3, 16);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+        renderer.setSize(threeContainer.clientWidth, threeContainer.clientHeight);
+        renderer.setClearColor(0x000000, 0);
+        renderer.domElement.style.position = 'absolute';
+        renderer.domElement.style.inset = '0';
+        renderer.domElement.style.width = '100%';
+        renderer.domElement.style.height = '100%';
+        renderer.domElement.style.pointerEvents = 'none';
+        threeContainer.appendChild(renderer.domElement);
+
+        // Core
+        const core = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(2.8, 2),
+            new THREE.MeshBasicMaterial({ color: 0xf0a500, wireframe: true })
+        );
+        scene.add(core);
+
+        const innerCore = new THREE.Mesh(
+            new THREE.IcosahedronGeometry(1.4, 2),
+            new THREE.MeshBasicMaterial({ color: 0xa87000 })
+        );
+        scene.add(innerCore);
+
+        // Fleet vehicles
+        const bikes = {};
+        const users = ['Kritagya', 'Atul', 'Piyush', 'Shivam', 'Rahul', 'Vikram', 'Sanjay', 'Deepak', 'Amit', 'Karan', 'Vishal', 'Sumit'];
+
+        // Vehicle data store
+        const vehicleData = {};
+        users.forEach((name, i) => {
+            vehicleData[name] = {
+                reg: `FLEET-${(i + 1).toString().padStart(3, '0')}`,
+                fuel: Math.floor(Math.random() * 40 + 55),
+                speed: Math.floor(Math.random() * 60 + 20),
+                temp: Math.floor(Math.random() * 20 + 75),
+                battery: Math.floor(Math.random() * 30 + 65),
+                issue: 'NOMINAL',
+                risk: 'low',
+                prob: 0
+            };
+        });
+
+        // Populate Fleet List Dynamically
+        const fleetListContainer = document.getElementById('fleet-list-container');
+        if (fleetListContainer) {
+            users.forEach((name, i) => {
+                const d = vehicleData[name];
+                const card = document.createElement('div');
+                card.className = 'fleet-card';
+                card.id = `card-${name}`;
+                card.innerHTML = `
+                    <div class="card-name">${name.toUpperCase()}</div>
+                    <div class="card-reg">${d.reg}</div>
+                    <div class="card-status">
+                        <div class="status-dot"></div>
+                        <span class="card-status-text" id="status-${name}">ACTIVE</span>
+                    </div>
+                `;
+                card.onclick = () => openVehiclePanel(name);
+                fleetListContainer.appendChild(card);
+            });
+        }
+        const orbitRadius = 9;
+
+        users.forEach((name, i) => {
+            const angle = (i / users.length) * Math.PI * 2;
+            const mesh = new THREE.Mesh(
+                new THREE.BoxGeometry(1.0, 0.5, 2.2),
+                new THREE.MeshBasicMaterial({ color: 0xf0a500 })
+            );
+            mesh.userData = { angle, name };
+            scene.add(mesh);
+            bikes[name] = mesh;
+        });
+
+        // Lines
+        const linesMat = new THREE.LineBasicMaterial({ color: 0xa87000, transparent: true, opacity: 0.25 });
+        users.forEach((name, i) => {
+            const angle = (i / users.length) * Math.PI * 2;
+            const geo = new THREE.BufferGeometry().setFromPoints([
+                new THREE.Vector3(0, 0, 0),
+                new THREE.Vector3(Math.cos(angle) * orbitRadius, 0, Math.sin(angle) * orbitRadius)
+            ]);
+            scene.add(new THREE.Line(geo, linesMat));
+        });
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+            core.rotation.x += 0.003;
+            core.rotation.y += 0.007;
+            innerCore.rotation.y -= 0.011;
+
+            Object.values(bikes).forEach(bike => {
+                bike.userData.angle += 0.004;
+                bike.position.x = Math.cos(bike.userData.angle) * orbitRadius;
+                bike.position.z = Math.sin(bike.userData.angle) * orbitRadius;
+                bike.rotation.y = -bike.userData.angle;
+            });
+            renderer.render(scene, camera);
+        }
+        animate3D();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = threeContainer.clientWidth / threeContainer.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(threeContainer.clientWidth, threeContainer.clientHeight);
+        });
+
+        // ── LEAFLET MAP ───────────────────────────────────────────
+        const map = L.map('map', { zoomControl: false, attributionControl: false })
+            .setView([20.5937, 78.9629], 5);
+
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            maxZoom: 19,
+            subdomains: 'abcd'
+        }).addTo(map);
+
+        const fleetMarkers = {};
+        const mechanicMarkers = [];
+        let userLocation = [28.6139, 77.2090];
+        let userMarker = null;
+
+        const customIcon = (color) => L.divIcon({
+            className: '',
+            html: `<div style="background:${color};width:10px;height:10px;border-radius:50%;border:2px solid #0a0c0f;box-shadow:0 0 10px ${color}"></div>`,
+            iconSize: [10, 10], iconAnchor: [5, 5]
+        });
+
+        const mechanicIcon = L.divIcon({
+            className: '',
+            html: `<div style="background:#f0a500;width:14px;height:14px;border-radius:3px;border:2px solid #fff;box-shadow:0 0 8px #f0a500;display:flex;align-items:center;justify-content:center;font-size:8px;">🔧</div>`,
+            iconSize: [14, 14], iconAnchor: [7, 7]
+        });
+
+        const userIcon = L.divIcon({
+            className: '',
+            html: `<div style="background:#fff;width:10px;height:10px;border-radius:50%;border:2px solid #f0a500;box-shadow:0 0 8px #f0a500"></div>`,
+            iconSize: [10, 10], iconAnchor: [5, 5]
+        });
+
+        function initFleet(coords) {
+            Object.values(fleetMarkers).forEach(m => map.removeLayer(m));
+            users.forEach(name => {
+                const lat = coords[0] + (Math.random() - 0.5) * 0.04;
+                const lng = coords[1] + (Math.random() - 0.5) * 0.04;
+                const d = vehicleData[name];
+                fleetMarkers[name] = L.marker([lat, lng], { icon: customIcon('#f0a500') })
+                    .addTo(map)
+                    .bindPopup(`
+                        <b style="font-size:1.1em">🚗 ${name}</b><br>
+                        <span style="color:#a87000">${d.reg}</span><br><br>
+                        ⛽ Fuel: <b>${d.fuel}%</b><br>
+                        🌡 Engine: <b>${d.temp}°C</b><br>
+                        🚀 Speed: <b>${d.speed} km/h</b><br>
+                        🔋 Battery: <b>${d.battery}%</b><br>
+                        ⚠ Status: <b>${d.issue}</b>
+                    `);
+            });
+            if (userMarker) map.removeLayer(userMarker);
+            userMarker = L.marker(coords, { icon: userIcon }).addTo(map).bindPopup('<b>You are here</b>');
+        }
+
+        initFleet(userLocation);
+        map.setView(userLocation, 12);
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(pos => {
+                userLocation = [pos.coords.latitude, pos.coords.longitude];
+                map.setView(userLocation, 15);
+                initFleet(userLocation);
+                addLog('📍 GPS lock acquired', 'info-log');
+            }, err => {
+                addLog('⚠ Geolocation unavailable');
+            }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
+        }
+
+        async function searchLocation() {
+            const query = document.getElementById('city-search').value;
+            if (!query) return;
+            addLog(`🔍 Searching: ${query}`);
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                if (data.length > 0) {
+                    const { lat, lon } = data[0];
+                    userLocation = [parseFloat(lat), parseFloat(lon)];
+                    map.setView(userLocation, 14);
+                    initFleet(userLocation);
+                    addLog(`📍 Location: ${query}`, 'info-log');
+                } else addLog('❌ City not found');
+            } catch { addLog('❌ Search failed'); }
+        }
+
+        map.on('click', e => {
+            userLocation = [e.latlng.lat, e.latlng.lng];
+            initFleet(userLocation);
+            addLog('📍 Location set via map click', 'info-log');
+        });
+
+        function getDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371, dLat = deg2rad(lat2 - lat1), dLon = deg2rad(lon2 - lon1);
+            const a = Math.sin(dLat / 2) ** 2 + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon / 2) ** 2;
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        }
+        function deg2rad(d) { return d * Math.PI / 180; }
+
+        function renderMechanics(listEl, mData, lat, lng) {
+            listEl.innerHTML = '';
+            mData.slice(0, 12).forEach(el => {
+                const marker = L.marker([el.mLat, el.mLng], { icon: mechanicIcon })
+                    .addTo(map)
+                    .bindPopup(`<b>🛠 ${el.name}</b><br>${el.address}<br><span style="color:#f0a500">${el.dist.toFixed(2)} km away</span>`);
+                mechanicMarkers.push(marker);
+
+                const item = document.createElement('div');
+                item.className = 'mechanic-item';
+                item.innerHTML = `
+                    <div class="mechanic-info">
+                        <h4>${el.name}</h4>
+                        <p>${el.address}</p>
+                        <div class="mechanic-meta">
+                            <span>📍 ${el.dist.toFixed(2)} km</span>
+                            <span style="color:var(--green)">● OPEN</span>
+                        </div>
+                    </div>`;
+                item.onclick = () => { map.setView([el.mLat, el.mLng], 16); marker.openPopup(); };
+                listEl.appendChild(item);
+            });
+            addLog(`🛠 Found ${mData.length} service centers`, 'info-log');
+        }
+
+        async function fetchOverpass(lat, lng) {
+            // Try multiple Overpass endpoints
+            const endpoints = [
+                'https://overpass-api.de/api/interpreter',
+                'https://overpass.kumi.systems/api/interpreter',
+                'https://maps.mail.ru/osm/tools/overpass/api/interpreter'
+            ];
+            // Strictly repair workshops only - no fuel stations
+            const q = `[out:json][timeout:25];(
+                node["shop"="car_repair"](around:15000,${lat},${lng});
+                node["amenity"="car_repair"](around:15000,${lat},${lng});
+                node["shop"="tyres"](around:15000,${lat},${lng});
+                node["shop"="motorcycle_repair"](around:15000,${lat},${lng});
+                node["craft"="car_repair"](around:15000,${lat},${lng});
+                way["shop"="car_repair"](around:15000,${lat},${lng});
+                way["craft"="car_repair"](around:15000,${lat},${lng});
+                way["amenity"="car_repair"](around:15000,${lat},${lng});
+            );out center 30;`;
+
+            for (const endpoint of endpoints) {
+                try {
+                    const controller = new AbortController();
+                    const timer = setTimeout(() => controller.abort(), 12000);
+                    const res = await fetch(`${endpoint}?data=${encodeURIComponent(q)}`, { signal: controller.signal });
+                    clearTimeout(timer);
+                    if (!res.ok) continue;
+                    const data = await res.json();
+                    if (data.elements && data.elements.length > 0) {
+                        return data.elements.map(el => {
+                            const mLat = el.lat || el.center?.lat;
+                            const mLng = el.lon || el.center?.lon;
+                            const tags = el.tags || {};
+                            return {
+                                mLat, mLng,
+                                name: tags.name || tags.brand || 'Auto Service Center',
+                                address: tags['addr:street'] ? `${tags['addr:street']}${tags['addr:housenumber'] ? ' ' + tags['addr:housenumber'] : ''}` : tags['addr:city'] || 'Nearby Facility',
+                                dist: getDistance(lat, lng, mLat, mLng)
+                            };
+                        }).filter(e => e.mLat && e.mLng).sort((a, b) => a.dist - b.dist);
+                    }
+                } catch (e) { /* try next */ }
+            }
+            return null;
+        }
+
+        async function fetchNominatimMechanics(lat, lng) {
+            // Fallback: Nominatim search for mechanics near coordinates
+            const queries = ['car repair workshop', 'auto mechanic shop', 'vehicle repair garage', 'automobile service workshop'];
+            const results = [];
+            for (const q of queries) {
+                try {
+                    const controller = new AbortController();
+                    setTimeout(() => controller.abort(), 8000);
+                    const res = await fetch(
+                        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&viewbox=${lng-0.2},${lat+0.2},${lng+0.2},${lat-0.2}&bounded=1&limit=8`,
+                        { headers: { 'Accept-Language': 'en' } }
+                    );
+                    const data = await res.json();
+                    data.forEach(item => {
+                        const mLat = parseFloat(item.lat), mLng = parseFloat(item.lon);
+                        results.push({
+                            mLat, mLng,
+                            name: item.display_name.split(',')[0] || 'Service Center',
+                            address: item.display_name.split(',').slice(1, 3).join(',').trim() || 'Nearby',
+                            dist: getDistance(lat, lng, mLat, mLng)
+                        });
+                    });
+                } catch (e) { /* continue */ }
+            }
+            return results.sort((a, b) => a.dist - b.dist);
+        }
+
+        function generateFallbackMechanics(lat, lng) {
+            // Synthetic nearby placeholders so UI never shows empty
+            const names = ['City Auto Works', 'QuickFix Garage', 'Highway Motors', 'Express Auto Care',
+                           'ProTech Service', 'Elite Car Repair', 'FastLane Workshop', 'Reliable Auto Hub'];
+            return names.map((name, i) => {
+                const angle = (i / names.length) * Math.PI * 2;
+                const r = 0.005 + Math.random() * 0.025;
+                const mLat = lat + Math.cos(angle) * r;
+                const mLng = lng + Math.sin(angle) * r;
+                return { mLat, mLng, name, address: 'Nearby Service Point', dist: getDistance(lat, lng, mLat, mLng) };
+            }).sort((a, b) => a.dist - b.dist);
+        }
+
+        async function findMechanics(lat, lng) {
+            const listEl = document.getElementById('mechanic-list');
+            listEl.innerHTML = `<div style="text-align:center;padding:30px;color:var(--amber);font-family:'Share Tech Mono',monospace;font-size:0.65em;letter-spacing:0.08em;">
+                <div style="margin-bottom:10px;font-size:1.4em;">🔍</div>SCANNING NEARBY<br>SERVICE CENTERS...</div>`;
+
+            mechanicMarkers.forEach(m => map.removeLayer(m));
+            mechanicMarkers.length = 0;
+
+            addLog('🛠 Searching nearby mechanics...', 'info-log');
+
+            // Try Overpass first
+            let results = await fetchOverpass(lat, lng);
+
+            // Fallback to Nominatim
+            if (!results || results.length === 0) {
+                addLog('⚠ Overpass slow, trying backup...', '');
+                results = await fetchNominatimMechanics(lat, lng);
+            }
+
+            // Last resort: synthetic markers so the panel is never empty
+            if (!results || results.length === 0) {
+                addLog('⚠ Using estimated locations', '');
+                results = generateFallbackMechanics(lat, lng);
+            }
+
+            renderMechanics(listEl, results, lat, lng);
+        }
+
+        // Fleet movement simulation
+        function moveFleet() {
+            Object.entries(fleetMarkers).forEach(([, marker]) => {
+                const ll = marker.getLatLng();
+                marker.setLatLng([ll.lat + (Math.random() - 0.5) * 0.005, ll.lng + (Math.random() - 0.5) * 0.005]);
+            });
+            setTimeout(moveFleet, 3000);
+        }
+        moveFleet();
+
+        // ── VOICE SYSTEM ──────────────────────────────────────────
+        let audioUnlocked = false;
+        let pendingSpeak = null;
+
+        function unlockAudio() {
+            // Play a silent buffer to unlock audio context
+            const audio = document.getElementById('audio');
+            audio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=';
+            audio.play().then(() => {
+                audioUnlocked = true;
+                document.getElementById('voice-unlock').style.display = 'none';
+                addLog('🔊 Voice system activated', 'info-log');
+                // Speak any pending alert
+                if (pendingSpeak) { pendingSpeak(); pendingSpeak = null; }
+            }).catch(() => {
+                audioUnlocked = true;
+                document.getElementById('voice-unlock').style.display = 'none';
+            });
+        }
+
+        function showToast(script, owner, issue) {
+            const toast = document.getElementById('voice-toast');
+            document.getElementById('toast-text').textContent = `"${script}"`;
+            document.getElementById('toast-owner').textContent = `VEHICLE: ${owner.toUpperCase()} · ISSUE: ${issue.toUpperCase()}`;
+            toast.style.display = 'block';
+            toast.classList.add('show');
+            // Hide after speech ends or 10s
+            setTimeout(() => {
+                toast.style.display = 'none';
+                toast.classList.remove('show');
+            }, Math.max(script.length * 80, 5000));
+        }
+
+        function speakAlert(script, owner, issue, audio_url) {
+            const doSpeak = () => {
+                showToast(script, owner, issue);
+
+                // PRIMARY: play backend gTTS audio (LLM-generated voice)
+                if (audio_url) {
+                    const audio = document.getElementById('audio');
+                    audio.src = audio_url;
+                    audio.play().then(() => {
+                        addLog('🔊 Speaking: backend TTS', 'info-log');
+                    }).catch(() => {
+                        // FALLBACK: Web Speech API (browser native voice)
+                        useBrowserTTS(script, owner, issue);
+                    });
+                } else {
+                    useBrowserTTS(script, owner, issue);
+                }
+            };
+
+            if (!audioUnlocked) {
+                pendingSpeak = doSpeak;
+                // Show overlay only when an alert is pending and audio is still locked
+                document.getElementById('voice-unlock').style.display = 'flex';
+            } else {
+                doSpeak();
+            }
+        }
+
+        function useBrowserTTS(script, owner, issue) {
+            if (!('speechSynthesis' in window)) {
+                addLog('⚠ No TTS available on this device');
+                return;
+            }
+            window.speechSynthesis.cancel();
+            const utter = new SpeechSynthesisUtterance(script);
+            utter.rate = 0.92;
+            utter.pitch = 0.85;
+            utter.volume = 1;
+
+            // Pick a good voice if available
+            const voices = window.speechSynthesis.getVoices();
+            const preferred = voices.find(v =>
+                v.name.includes('Google') || v.name.includes('Daniel') || v.name.includes('Samantha')
+            ) || voices[0];
+            if (preferred) utter.voice = preferred;
+
+            utter.onstart = () => addLog('🔊 Speaking via browser TTS', 'info-log');
+            utter.onerror = () => addLog('⚠ TTS error');
+            window.speechSynthesis.speak(utter);
+        }
+
+        // ── AUTO-SCAN + MACRODROID ────────────────────────────────
+        const SCAN_INTERVAL = 30000;
+        let scanCountdown = SCAN_INTERVAL / 1000;
+        const progressFill = document.getElementById('progress-fill');
+        const nextScanText = document.getElementById('next-scan-text');
+        const headerTimer = document.getElementById('header-timer');
+        const macroIndicator = document.getElementById('macro-indicator');
+        const macroText = document.getElementById('macro-text');
+        const scanRing = document.getElementById('scan-ring');
+
+        // Countdown timer
+        function tickCountdown() {
+            scanCountdown--;
+            if (scanCountdown < 0) scanCountdown = SCAN_INTERVAL / 1000;
+            const pct = ((SCAN_INTERVAL / 1000 - scanCountdown) / (SCAN_INTERVAL / 1000)) * 100;
+            progressFill.style.width = pct + '%';
+            nextScanText.textContent = `NEXT SCAN IN ${scanCountdown}s`;
+            headerTimer.textContent = `NEXT SCAN: ${scanCountdown}s`;
+        }
+
+        setInterval(tickCountdown, 1000);
+
+        async function triggerMacroDroid() {
+            macroIndicator.classList.remove('active');
+            macroText.textContent = 'TRIGGERING...';
+            try {
+                const res = await fetch('https://trigger.macrodroid.com/2dcfb9f5-5a95-4e2a-afc6-54940b86000b/{trigger_that_fired}');
+                if (res.ok) {
+                    macroIndicator.classList.add('active');
+                    macroText.textContent = 'TRIGGERED ✓';
+                    addLog('📲 MacroDroid trigger sent', 'info-log');
+                    setTimeout(() => { macroIndicator.classList.remove('active'); macroText.textContent = 'STANDBY'; }, 3000);
+                } else {
+                    macroText.textContent = 'TRIGGER FAILED';
+                    addLog('⚠ MacroDroid: non-OK response');
+                }
+            } catch (e) {
+                macroText.textContent = 'OFFLINE';
+                addLog('⚠ MacroDroid unreachable');
+            }
+        }
+
+        async function scan() {
+            scanCountdown = SCAN_INTERVAL / 1000;
+            scanRing.classList.add('active');
+            addLog('🔍 Scanning fleet...', 'info-log');
+            progressFill.style.width = '0%';
+
+            // Reset all cards
+            users.forEach(name => {
+                bikes[name].material.color.setHex(0xf0a500);
+                document.getElementById(`card-${name}`).classList.remove('alert');
+                document.getElementById(`status-${name}`).textContent = 'ACTIVE';
+            });
+
+            // Trigger MacroDroid for each user
+            users.forEach(() => triggerMacroDroid());
+
+            window.onbeforeunload = () => "Stay";
+
+            try {
+                const res = await fetch('http://localhost:5000/api/start-journey', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ autonomous: true })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    const { owner, issue, risk, probability, audio_url } = data.data;
+                    const isCritical = risk === 'critical';
+                    const isWarning = risk === 'warning';
+                    const color = isCritical ? 0xff3b3b : 0xffa502;
+                    const colorHex = isCritical ? '#ff3b3b' : '#ffa502';
+                    const probPct = (probability * 100).toFixed(1);
+
+                    // Update vehicle data store
+                    vehicleData[owner].issue = issue;
+                    vehicleData[owner].risk = risk;
+                    vehicleData[owner].prob = probability;
+                    vehicleData[owner].temp = Math.floor(80 + probability * 40);
+                    vehicleData[owner].speed = Math.floor(Math.random() * 80 + 10);
+                    vehicleData[owner].fuel = Math.max(5, vehicleData[owner].fuel - Math.floor(Math.random() * 3));
+
+                    // Update card telemetry display
+                    const fuelEl = document.getElementById(`fuel-${owner}`);
+                    const tempEl = document.getElementById(`temp-${owner}`);
+                    const speedEl = document.getElementById(`speed-${owner}`);
+                    if (fuelEl) fuelEl.textContent = vehicleData[owner].fuel + '%';
+                    if (tempEl) { tempEl.textContent = vehicleData[owner].temp + '°C'; tempEl.style.color = isCritical ? 'var(--red)' : 'var(--amber)'; }
+                    if (speedEl) speedEl.textContent = vehicleData[owner].speed + 'km/h';
+
+                    bikes[owner].material.color.setHex(color);
+                    document.getElementById(`card-${owner}`).classList.add('alert');
+                    document.getElementById(`status-${owner}`).textContent = `⚠ ${issue.toUpperCase()} (${probPct}%)`;
+
+                    addLog(`🚨 ${owner}: ${issue} [${risk.toUpperCase()} - ${probPct}%]`, 'alert-log');
+
+                    // Map updates
+                    document.getElementById('tracking-unit').textContent = `${owner} — ⚠ ${issue}`;
+                    const statusEl = document.getElementById('system-status');
+                    statusEl.className = 'status-pill danger';
+                    statusEl.innerHTML = '<div class="live-dot" style="background:var(--red);box-shadow:0 0 6px var(--red)"></div> ALERT DETECTED';
+
+                    const marker = fleetMarkers[owner];
+                    if (marker) {
+                        marker.setIcon(customIcon(colorHex));
+                        const d = vehicleData[owner];
+                        marker.setPopupContent(`
+                            <b style="font-size:1.1em">🚗 ${owner}</b><br>
+                            <span style="color:#ff3b3b">⚠ ${issue}</span><br><br>
+                            ⛽ Fuel: <b>${d.fuel}%</b><br>
+                            🌡 Engine: <b style="color:${isCritical?'#ff3b3b':'#ffa502'}">${d.temp}°C</b><br>
+                            🚀 Speed: <b>${d.speed} km/h</b><br>
+                            🔋 Battery: <b>${d.battery}%</b><br>
+                            📊 Failure Risk: <b>${probPct}%</b>
+                        `);
+                        marker.openPopup();
+                        map.panTo(marker.getLatLng());
+                    }
+
+                    if (isCritical || isWarning) {
+                        const ll = marker?.getLatLng();
+                        if (ll) findMechanics(ll.lat, ll.lng);
+                    }
+
+                    speakAlert(data.data.voice_script || `Alert for ${owner}. ${issue} detected. Risk level ${risk}.`, owner, issue, audio_url);
+                } else {
+                    addLog('◦ Scan complete — no issues detected');
+                }
+            } catch {
+                addLog('❌ Connection failed — localhost:5000 unreachable');
+            }
+
+            scanRing.classList.remove('active');
+        }
+
+        // Auto-scan: starts shortly after load, then every 30s
+        window.addEventListener('load', () => {
+            // Attempt to unlock audio immediately (browser may allow if previously interacted)
+            unlockAudio();
+
+            // Start the first scan cycle quickly
+            setTimeout(() => scan(), 500);
+            setInterval(() => scan(), SCAN_INTERVAL);
+        });
+
+        // Add universal listeners to unlock audio on first interaction
+        ['mousedown', 'keydown', 'touchstart'].forEach(type => {
+            window.addEventListener(type, () => {
+                if (!audioUnlocked) unlockAudio();
+            }, { once: true });
+        });
+        // ── VEHICLE DETAIL PANEL ──────────────────────────────────
+        function openVehiclePanel(name) {
+            const d = vehicleData[name];
+            document.getElementById('vp-name').textContent = name.toUpperCase();
+            document.getElementById('vp-reg').textContent = d.reg + ' · FLEET UNIT';
+
+            // Status badge
+            const badge = document.getElementById('vp-status-badge');
+            const statusText = document.getElementById('vp-status-text');
+            badge.className = 'vp-status-badge ' + (d.risk === 'critical' ? 'crit' : d.risk === 'warning' ? 'warn' : 'ok');
+            statusText.textContent = d.risk === 'critical' ? 'CRITICAL ALERT' : d.risk === 'warning' ? 'WARNING' : 'NOMINAL';
+
+            // Gauges
+            document.getElementById('vp-fuel').textContent = d.fuel + '%';
+            document.getElementById('vp-fuel-bar').style.width = d.fuel + '%';
+            document.getElementById('vp-fuel-bar').style.background = d.fuel < 20 ? 'var(--red)' : 'var(--green)';
+
+            document.getElementById('vp-batt').textContent = d.battery + '%';
+            document.getElementById('vp-batt-bar').style.width = d.battery + '%';
+            document.getElementById('vp-batt-bar').style.background = d.battery < 20 ? 'var(--red)' : 'var(--amber)';
+
+            const tempPct = Math.min(100, ((d.temp - 60) / 60) * 100);
+            document.getElementById('vp-temp').textContent = d.temp + '°C';
+            document.getElementById('vp-temp-bar').style.width = tempPct + '%';
+            document.getElementById('vp-temp-bar').style.background = d.temp > 100 ? 'var(--red)' : 'var(--amber)';
+
+            document.getElementById('vp-speed').textContent = d.speed + ' km/h';
+            document.getElementById('vp-speed-bar').style.width = Math.min(100, d.speed / 1.4) + '%';
+
+            // Diagnostics
+            document.getElementById('vp-issue').textContent = d.issue || 'Systems Nominal';
+            document.getElementById('vp-issue').style.color = d.risk === 'critical' ? 'var(--red)' : d.risk === 'warning' ? '#ffa502' : 'var(--green)';
+            const probPct = (d.prob * 100).toFixed(1);
+            document.getElementById('vp-prob').textContent = probPct + '%';
+            document.getElementById('vp-prob-bar').style.width = probPct + '%';
+            document.getElementById('vp-risk').textContent = (d.risk || 'LOW').toUpperCase();
+            document.getElementById('vp-risk').style.color = d.risk === 'critical' ? 'var(--red)' : d.risk === 'warning' ? '#ffa502' : 'var(--green)';
+
+            // Map button
+            document.getElementById('vp-map-btn').onclick = () => {
+                closeVehiclePanel();
+                toggleView('map');
+                setTimeout(() => {
+                    const marker = fleetMarkers[name];
+                    if (marker) { map.setView(marker.getLatLng(), 15); marker.openPopup(); }
+                }, 450);
+            };
+
+            document.getElementById('vehicle-panel').classList.add('open');
+        }
+
+        function closeVehiclePanel() {
+            document.getElementById('vehicle-panel').classList.remove('open');
+        }
+
+        // Close panel on outside click
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('vehicle-panel');
+            if (panel.classList.contains('open') && !panel.contains(e.target) && !e.target.closest('.fleet-card')) {
+                closeVehiclePanel();
+            }
+        });
+
+
+    </script>
+</body>
+
+</html>
