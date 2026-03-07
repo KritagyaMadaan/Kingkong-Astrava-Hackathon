@@ -468,6 +468,13 @@
             background: var(--amber-glow);
         }
 
+        .log-entry.meeting-log {
+            color: var(--green);
+            border-left-color: var(--green);
+            background: rgba(0, 255, 136, 0.06);
+            font-weight: 600;
+        }
+
         @keyframes log-in {
             from {
                 opacity: 0;
@@ -863,6 +870,545 @@
         .scanning-ring.active {
             opacity: 1;
         }
+
+        /* ── CALENDAR / MEETING SCHEDULER ─────────── */
+        #calendar-overlay {
+            position: fixed;
+            inset: 0;
+            left: 64px;
+            background: var(--steel);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            padding: 20px;
+            animation: fadeIn 0.3s ease;
+            overflow: hidden;
+        }
+
+        #calendar-overlay.active {
+            display: flex;
+        }
+
+        .cal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 18px;
+            flex-shrink: 0;
+        }
+
+        .cal-title-row {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .cal-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1em;
+            font-weight: 700;
+            color: var(--amber);
+            letter-spacing: 0.15em;
+        }
+
+        .cal-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.62em;
+            letter-spacing: 0.08em;
+            color: var(--amber);
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: var(--amber-glow);
+            border: 1px solid var(--amber-border);
+        }
+
+        .cal-header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .cal-nav-btn {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.62em;
+            letter-spacing: 0.1em;
+            color: var(--text-dim);
+            background: var(--steel-light);
+            border: 1px solid var(--steel-border);
+            padding: 7px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cal-nav-btn:hover {
+            border-color: var(--amber-border);
+            color: var(--amber);
+        }
+
+        .cal-nav-btn.primary {
+            background: var(--amber-glow);
+            border-color: var(--amber-border);
+            color: var(--amber);
+        }
+
+        .cal-nav-btn.primary:hover {
+            background: var(--amber);
+            color: var(--steel);
+        }
+
+        .cal-body {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: 16px;
+            min-height: 0;
+        }
+
+        /* Month Grid */
+        .cal-grid-wrap {
+            display: flex;
+            flex-direction: column;
+            background: var(--steel-mid);
+            border: 1px solid var(--steel-border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .cal-month-nav {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--steel-border);
+            flex-shrink: 0;
+        }
+
+        .cal-month-label {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85em;
+            font-weight: 700;
+            color: var(--amber);
+            letter-spacing: 0.1em;
+        }
+
+        .cal-month-arrow {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--steel-border);
+            border-radius: 5px;
+            background: transparent;
+            color: var(--text-dim);
+            cursor: pointer;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .cal-month-arrow:hover {
+            border-color: var(--amber-border);
+            color: var(--amber);
+        }
+
+        .cal-day-names {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            padding: 8px 10px 4px;
+            border-bottom: 1px solid var(--steel-border);
+        }
+
+        .cal-day-name {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.55em;
+            letter-spacing: 0.12em;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .cal-days {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            grid-auto-rows: minmax(60px, 1fr);
+            gap: 1px;
+            padding: 6px 8px;
+            overflow-y: auto;
+        }
+
+        .cal-days::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .cal-days::-webkit-scrollbar-thumb {
+            background: var(--amber-dim);
+        }
+
+        .cal-day {
+            border-radius: 6px;
+            padding: 5px 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            min-height: 60px;
+        }
+
+        .cal-day:hover {
+            background: var(--amber-glow);
+        }
+
+        .cal-day.other-month .cal-day-num {
+            color: var(--text-muted);
+            opacity: 0.4;
+        }
+
+        .cal-day.today {
+            background: rgba(240, 165, 0, 0.08);
+            border: 1px solid var(--amber-border);
+        }
+
+        .cal-day.selected {
+            background: var(--amber-glow);
+            border: 1px solid var(--amber);
+        }
+
+        .cal-day.has-meeting::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            right: 6px;
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--amber);
+        }
+
+        .cal-day.has-alert-meeting::after {
+            background: var(--red);
+        }
+
+        .cal-day-num {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.65em;
+            color: var(--text-dim);
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .cal-day.today .cal-day-num {
+            background: var(--amber);
+            color: var(--steel);
+            font-weight: 700;
+        }
+
+        .cal-meeting-chip {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.5em;
+            letter-spacing: 0.04em;
+            background: var(--amber-glow);
+            border: 1px solid var(--amber-border);
+            border-radius: 3px;
+            padding: 1px 4px;
+            margin-top: 2px;
+            color: var(--amber);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .cal-meeting-chip.alert-chip {
+            background: rgba(255, 59, 59, 0.1);
+            border-color: rgba(255, 59, 59, 0.3);
+            color: var(--red);
+        }
+
+        /* Meetings Side Panel */
+        .cal-side {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .cal-meetings-panel {
+            background: var(--steel-mid);
+            border: 1px solid var(--steel-border);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .cal-meetings-header {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--steel-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .cal-meetings-title {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            letter-spacing: 0.15em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+
+        .cal-meetings-count {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            color: var(--amber);
+            background: var(--amber-glow);
+            border: 1px solid var(--amber-border);
+            padding: 2px 8px;
+            border-radius: 20px;
+        }
+
+        #cal-meetings-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        #cal-meetings-list::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        #cal-meetings-list::-webkit-scrollbar-thumb {
+            background: var(--amber-dim);
+        }
+
+        .meeting-item {
+            background: var(--steel-light);
+            border: 1px solid var(--steel-border);
+            border-left: 3px solid var(--amber-dim);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.25s;
+            animation: log-in 0.3s ease;
+        }
+
+        .meeting-item:hover {
+            border-left-color: var(--amber);
+            transform: translateX(3px);
+        }
+
+        .meeting-item.alert-meeting {
+            border-left-color: var(--red);
+            background: rgba(255, 59, 59, 0.04);
+        }
+
+        .meeting-item.alert-meeting:hover {
+            border-left-color: var(--red);
+        }
+
+        .meeting-time {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.58em;
+            letter-spacing: 0.08em;
+            color: var(--amber);
+            margin-bottom: 4px;
+        }
+
+        .meeting-item.alert-meeting .meeting-time {
+            color: var(--red);
+        }
+
+        .meeting-person {
+            font-family: 'Rajdhani', sans-serif;
+            font-weight: 700;
+            font-size: 0.95em;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+
+        .meeting-issue {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.55em;
+            letter-spacing: 0.06em;
+            color: var(--text-dim);
+        }
+
+        .meeting-badge {
+            display: inline-block;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.5em;
+            letter-spacing: 0.08em;
+            padding: 2px 8px;
+            border-radius: 20px;
+            margin-top: 5px;
+        }
+
+        .meeting-badge.auto {
+            background: rgba(255, 59, 59, 0.1);
+            border: 1px solid rgba(255, 59, 59, 0.25);
+            color: var(--red);
+        }
+
+        .meeting-badge.manual {
+            background: var(--amber-glow);
+            border: 1px solid var(--amber-border);
+            color: var(--amber);
+        }
+
+        .meeting-delete {
+            float: right;
+            font-size: 0.7em;
+            color: var(--text-muted);
+            cursor: pointer;
+            background: none;
+            border: none;
+            transition: color 0.2s;
+            margin-left: 8px;
+        }
+
+        .meeting-delete:hover {
+            color: var(--red);
+        }
+
+        /* NEW MEETING FORM */
+        .cal-new-meeting {
+            background: var(--steel-mid);
+            border: 1px solid var(--steel-border);
+            border-radius: 10px;
+            padding: 16px;
+            flex-shrink: 0;
+        }
+
+        .cal-form-title {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            letter-spacing: 0.15em;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .cal-form-row {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .cal-input {
+            background: var(--steel-light);
+            border: 1px solid var(--steel-border);
+            color: var(--text-primary);
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.62em;
+            letter-spacing: 0.05em;
+            outline: none;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+
+        .cal-input:focus {
+            border-color: var(--amber-border);
+        }
+
+        .cal-input option {
+            background: var(--steel-mid);
+        }
+
+        .cal-form-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+
+        .cal-submit {
+            flex: 1;
+            padding: 9px;
+            background: var(--amber-glow);
+            border: 1px solid var(--amber-border);
+            color: var(--amber);
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.6em;
+            letter-spacing: 0.08em;
+            transition: all 0.2s;
+        }
+
+        .cal-submit:hover {
+            background: var(--amber);
+            color: var(--steel);
+        }
+
+        /* Meeting notification toast */
+        #meeting-toast {
+            position: fixed;
+            bottom: 24px;
+            left: 88px;
+            z-index: 10000;
+            display: none;
+            background: rgba(17, 20, 24, 0.97);
+            border: 1px solid var(--amber-border);
+            border-radius: 12px;
+            padding: 16px 20px;
+            min-width: 300px;
+            max-width: 380px;
+            box-shadow: 0 0 30px rgba(240, 165, 0, 0.15);
+            font-family: 'Rajdhani', sans-serif;
+            animation: toast-slide 0.35s ease forwards;
+        }
+
+        #meeting-toast.show {
+            display: block;
+        }
+
+        .meeting-toast-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7em;
+            font-weight: 700;
+            color: var(--amber);
+            letter-spacing: 0.12em;
+            margin-bottom: 6px;
+        }
+
+        .meeting-toast-body {
+            font-size: 0.9em;
+            color: var(--text-primary);
+            line-height: 1.5;
+        }
+
+        .meeting-toast-sub {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.58em;
+            color: var(--text-dim);
+            margin-top: 6px;
+            letter-spacing: 0.06em;
+        }
+
+        /* Nav badge for pending meetings */
+        .nav-meeting-badge {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--red);
+            box-shadow: 0 0 6px var(--red);
+            display: none;
+        }
+
+        .nav-meeting-badge.visible {
+            display: block;
+        }
     </style>
 </head>
 
@@ -888,6 +1434,17 @@
                 <line x1="16" y1="6" x2="16" y2="22" />
             </svg>
             <div class="nav-tooltip">MAP EXPLORER</div>
+        </div>
+
+        <div class="nav-item" onclick="toggleView('calendar')" id="nav-cal">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+                <rect x="3" y="4" width="18" height="18" rx="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+            </svg>
+            <div class="nav-tooltip">MEETINGS</div>
+            <div class="nav-meeting-badge" id="nav-meeting-badge"></div>
         </div>
 
         <div class="nav-divider"></div>
@@ -984,7 +1541,8 @@
                 </div>
             </div>
             <div style="display:flex;gap:10px;align-items:center;">
-                <button class="close-map" onclick="findMechanics(userLocation[0], userLocation[1])" style="border-color:rgba(240,165,0,0.4);color:var(--amber);">🛠 FIND MECHANICS</button>
+                <button class="close-map" onclick="findMechanics(userLocation[0], userLocation[1])"
+                    style="border-color:rgba(240,165,0,0.4);color:var(--amber);">🛠 FIND MECHANICS</button>
                 <button class="close-map" onclick="toggleView('dashboard')">← BACK TO DASHBOARD</button>
             </div>
         </div>
@@ -1014,6 +1572,77 @@
         </div>
     </div>
 
+    <!-- MEETING TOAST NOTIFICATION -->
+    <div id="meeting-toast">
+        <div class="meeting-toast-title">📅 MEETING SCHEDULED</div>
+        <div class="meeting-toast-body" id="meeting-toast-body">—</div>
+        <div class="meeting-toast-sub" id="meeting-toast-sub">—</div>
+    </div>
+
+    <!-- CALENDAR OVERLAY -->
+    <div id="calendar-overlay">
+        <div class="cal-header">
+            <div class="cal-title-row">
+                <div class="cal-title">MEETING SCHEDULER</div>
+                <div class="cal-badge" id="cal-total-badge">0 MEETINGS</div>
+            </div>
+            <div class="cal-header-actions">
+                <button class="cal-nav-btn" onclick="toggleView('dashboard')">← BACK</button>
+            </div>
+        </div>
+        <div class="cal-body">
+            <!-- Month Grid -->
+            <div class="cal-grid-wrap">
+                <div class="cal-month-nav">
+                    <button class="cal-month-arrow" onclick="shiftMonth(-1)">&#8249;</button>
+                    <div class="cal-month-label" id="cal-month-label">MARCH 2026</div>
+                    <button class="cal-month-arrow" onclick="shiftMonth(1)">&#8250;</button>
+                </div>
+                <div class="cal-day-names">
+                    <div class="cal-day-name">SUN</div>
+                    <div class="cal-day-name">MON</div>
+                    <div class="cal-day-name">TUE</div>
+                    <div class="cal-day-name">WED</div>
+                    <div class="cal-day-name">THU</div>
+                    <div class="cal-day-name">FRI</div>
+                    <div class="cal-day-name">SAT</div>
+                </div>
+                <div class="cal-days" id="cal-days-grid"></div>
+            </div>
+
+            <!-- Side: meetings list + new meeting form -->
+            <div class="cal-side">
+                <div class="cal-meetings-panel">
+                    <div class="cal-meetings-header">
+                        <div class="cal-meetings-title" id="cal-day-label">ALL MEETINGS</div>
+                        <div class="cal-meetings-count" id="cal-meetings-count">0</div>
+                    </div>
+                    <div id="cal-meetings-list">
+                        <div
+                            style="text-align:center;padding:30px 20px;color:var(--text-muted);font-family:'Share Tech Mono',monospace;font-size:0.65em;letter-spacing:0.08em;line-height:1.8;">
+                            NO MEETINGS<br>SCHEDULED YET
+                        </div>
+                    </div>
+                </div>
+                <!-- New meeting form -->
+                <div class="cal-new-meeting">
+                    <div class="cal-form-title">+ SCHEDULE NEW MEETING</div>
+                    <div class="cal-form-row">
+                        <select class="cal-input" id="meeting-person">
+                            <option value="">— Select Person —</option>
+                        </select>
+                        <input type="date" class="cal-input" id="meeting-date">
+                        <input type="time" class="cal-input" id="meeting-time" value="09:00">
+                        <input type="text" class="cal-input" id="meeting-notes" placeholder="Agenda / Notes (optional)">
+                        <div class="cal-form-actions">
+                            <button class="cal-submit" onclick="scheduleManualMeeting()">📅 SCHEDULE</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- VEHICLE DETAIL PANEL -->
     <div id="vehicle-panel">
         <div class="vp-header">
@@ -1025,7 +1654,8 @@
         </div>
         <div class="vp-body">
             <div id="vp-status-badge" class="vp-status-badge ok">
-                <div id="vp-status-dot" style="width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;"></div>
+                <div id="vp-status-dot"
+                    style="width:6px;height:6px;border-radius:50%;background:currentColor;flex-shrink:0;"></div>
                 <span id="vp-status-text">NOMINAL</span>
             </div>
 
@@ -1034,22 +1664,30 @@
                 <div class="vp-gauge">
                     <div class="vp-gauge-label">⛽ FUEL LEVEL</div>
                     <div class="vp-gauge-val" id="vp-fuel">—</div>
-                    <div class="vp-gauge-bar"><div class="vp-gauge-fill" id="vp-fuel-bar" style="background:var(--green);width:0%"></div></div>
+                    <div class="vp-gauge-bar">
+                        <div class="vp-gauge-fill" id="vp-fuel-bar" style="background:var(--green);width:0%"></div>
+                    </div>
                 </div>
                 <div class="vp-gauge">
                     <div class="vp-gauge-label">🔋 BATTERY</div>
                     <div class="vp-gauge-val" id="vp-batt">—</div>
-                    <div class="vp-gauge-bar"><div class="vp-gauge-fill" id="vp-batt-bar" style="background:var(--amber);width:0%"></div></div>
+                    <div class="vp-gauge-bar">
+                        <div class="vp-gauge-fill" id="vp-batt-bar" style="background:var(--amber);width:0%"></div>
+                    </div>
                 </div>
                 <div class="vp-gauge">
                     <div class="vp-gauge-label">🌡 ENGINE TEMP</div>
                     <div class="vp-gauge-val" id="vp-temp">—</div>
-                    <div class="vp-gauge-bar"><div class="vp-gauge-fill" id="vp-temp-bar" style="background:var(--amber);width:0%"></div></div>
+                    <div class="vp-gauge-bar">
+                        <div class="vp-gauge-fill" id="vp-temp-bar" style="background:var(--amber);width:0%"></div>
+                    </div>
                 </div>
                 <div class="vp-gauge">
                     <div class="vp-gauge-label">🚗 SPEED</div>
                     <div class="vp-gauge-val" id="vp-speed">—</div>
-                    <div class="vp-gauge-bar"><div class="vp-gauge-fill" id="vp-speed-bar" style="background:#4ecdc4;width:0%"></div></div>
+                    <div class="vp-gauge-bar">
+                        <div class="vp-gauge-fill" id="vp-speed-bar" style="background:#4ecdc4;width:0%"></div>
+                    </div>
                 </div>
             </div>
 
@@ -1061,15 +1699,20 @@
             <div class="vp-issue-box">
                 <div class="vp-issue-title">FAILURE PROBABILITY</div>
                 <div class="vp-issue-val" id="vp-prob">0.0%</div>
-                <div class="vp-gauge-bar" style="margin-top:8px;"><div class="vp-gauge-fill" id="vp-prob-bar" style="background:var(--red);width:0%"></div></div>
+                <div class="vp-gauge-bar" style="margin-top:8px;">
+                    <div class="vp-gauge-fill" id="vp-prob-bar" style="background:var(--red);width:0%"></div>
+                </div>
             </div>
             <div class="vp-issue-box">
                 <div class="vp-issue-title">RISK LEVEL</div>
                 <div class="vp-issue-val" id="vp-risk">LOW</div>
             </div>
         </div>
-        <div class="vp-footer">
+        <div class="vp-footer" style="flex-wrap:wrap;gap:6px;">
             <div class="vp-btn" id="vp-map-btn" onclick="">📍 LOCATE ON MAP</div>
+            <div class="vp-btn" id="vp-schedule-btn" onclick=""
+                style="border-color:rgba(0,255,136,0.3);background:rgba(0,255,136,0.05);color:var(--green);">📅 SCHEDULE
+                MEETING</div>
             <div class="vp-btn secondary" onclick="closeVehiclePanel()">CLOSE</div>
         </div>
     </div>
@@ -1200,19 +1843,23 @@
         /* ── VEHICLE DETAIL PANEL ──────────────────── */
         #vehicle-panel {
             position: fixed;
-            top: 52px; right: -360px;
+            top: 52px;
+            right: -360px;
             width: 340px;
             height: calc(100vh - 52px);
             background: var(--steel-mid);
             border-left: 1px solid var(--amber-border);
             z-index: 500;
-            transition: right 0.35s cubic-bezier(0.4,0,0.2,1);
+            transition: right 0.35s cubic-bezier(0.4, 0, 0.2, 1);
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: -8px 0 40px rgba(0,0,0,0.5);
+            box-shadow: -8px 0 40px rgba(0, 0, 0, 0.5);
         }
-        #vehicle-panel.open { right: 0; }
+
+        #vehicle-panel.open {
+            right: 0;
+        }
 
         .vp-header {
             padding: 16px 20px;
@@ -1221,6 +1868,7 @@
             align-items: center;
             justify-content: space-between;
         }
+
         .vp-name {
             font-family: 'Orbitron', sans-serif;
             font-size: 1em;
@@ -1228,39 +1876,77 @@
             color: var(--amber);
             letter-spacing: 0.1em;
         }
+
         .vp-reg {
             font-family: 'Share Tech Mono', monospace;
             font-size: 0.6em;
             color: var(--text-dim);
             margin-top: 2px;
         }
+
         .vp-close {
-            width: 30px; height: 30px;
+            width: 30px;
+            height: 30px;
             border: 1px solid var(--steel-border);
             border-radius: 6px;
             background: transparent;
             color: var(--text-dim);
             cursor: pointer;
             font-size: 1em;
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.2s;
         }
-        .vp-close:hover { border-color: var(--amber-border); color: var(--amber); }
 
-        .vp-body { flex: 1; overflow-y: auto; padding: 16px 20px; }
-        .vp-body::-webkit-scrollbar { width: 3px; }
-        .vp-body::-webkit-scrollbar-thumb { background: var(--amber-dim); }
+        .vp-close:hover {
+            border-color: var(--amber-border);
+            color: var(--amber);
+        }
+
+        .vp-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px 20px;
+        }
+
+        .vp-body::-webkit-scrollbar {
+            width: 3px;
+        }
+
+        .vp-body::-webkit-scrollbar-thumb {
+            background: var(--amber-dim);
+        }
 
         .vp-status-badge {
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 5px 12px; border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 12px;
+            border-radius: 20px;
             font-family: 'Share Tech Mono', monospace;
-            font-size: 0.6em; letter-spacing: 0.08em;
+            font-size: 0.6em;
+            letter-spacing: 0.08em;
             margin-bottom: 16px;
         }
-        .vp-status-badge.ok { background: var(--green-dim); color: var(--green); border: 1px solid rgba(0,255,136,0.2); }
-        .vp-status-badge.warn { background: rgba(255,165,0,0.15); color: #ffa502; border: 1px solid rgba(255,165,0,0.3); }
-        .vp-status-badge.crit { background: var(--red-glow); color: var(--red); border: 1px solid rgba(255,59,59,0.3); }
+
+        .vp-status-badge.ok {
+            background: var(--green-dim);
+            color: var(--green);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+        }
+
+        .vp-status-badge.warn {
+            background: rgba(255, 165, 0, 0.15);
+            color: #ffa502;
+            border: 1px solid rgba(255, 165, 0, 0.3);
+        }
+
+        .vp-status-badge.crit {
+            background: var(--red-glow);
+            color: var(--red);
+            border: 1px solid rgba(255, 59, 59, 0.3);
+        }
 
         .vp-section-label {
             font-family: 'Share Tech Mono', monospace;
@@ -1278,12 +1964,14 @@
             gap: 10px;
             margin-bottom: 8px;
         }
+
         .vp-gauge {
             background: var(--steel-light);
             border: 1px solid var(--steel-border);
             border-radius: 8px;
             padding: 12px;
         }
+
         .vp-gauge-label {
             font-family: 'Share Tech Mono', monospace;
             font-size: 0.55em;
@@ -1291,12 +1979,14 @@
             letter-spacing: 0.08em;
             margin-bottom: 4px;
         }
+
         .vp-gauge-val {
             font-family: 'Orbitron', sans-serif;
             font-size: 1.1em;
             font-weight: 700;
             color: var(--amber);
         }
+
         .vp-gauge-bar {
             height: 3px;
             background: var(--steel-border);
@@ -1304,6 +1994,7 @@
             margin-top: 6px;
             overflow: hidden;
         }
+
         .vp-gauge-fill {
             height: 100%;
             border-radius: 2px;
@@ -1317,6 +2008,7 @@
             padding: 12px 14px;
             margin-bottom: 8px;
         }
+
         .vp-issue-title {
             font-family: 'Share Tech Mono', monospace;
             font-size: 0.6em;
@@ -1324,6 +2016,7 @@
             letter-spacing: 0.08em;
             margin-bottom: 6px;
         }
+
         .vp-issue-val {
             font-family: 'Rajdhani', sans-serif;
             font-size: 0.95em;
@@ -1334,8 +2027,10 @@
         .vp-footer {
             padding: 14px 20px;
             border-top: 1px solid var(--steel-border);
-            display: flex; gap: 8px;
+            display: flex;
+            gap: 8px;
         }
+
         .vp-btn {
             flex: 1;
             padding: 10px;
@@ -1350,31 +2045,50 @@
             transition: all 0.2s;
             text-align: center;
         }
-        .vp-btn:hover { background: var(--amber); color: var(--steel); }
-        .vp-btn.secondary { border-color: var(--steel-border); background: transparent; color: var(--text-dim); }
-        .vp-btn.secondary:hover { border-color: var(--amber-border); color: var(--amber); }
+
+        .vp-btn:hover {
+            background: var(--amber);
+            color: var(--steel);
+        }
+
+        .vp-btn.secondary {
+            border-color: var(--steel-border);
+            background: transparent;
+            color: var(--text-dim);
+        }
+
+        .vp-btn.secondary:hover {
+            border-color: var(--amber-border);
+            color: var(--amber);
+        }
     </style>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script>
         // ── UI NAVIGATION ─────────────────────────────────────────
         function toggleView(view) {
-            const overlay = document.getElementById('map-overlay');
+            const mapOverlay = document.getElementById('map-overlay');
+            const calOverlay = document.getElementById('calendar-overlay');
             document.getElementById('nav-dash').classList.remove('active');
             document.getElementById('nav-map').classList.remove('active');
+            document.getElementById('nav-cal').classList.remove('active');
+
+            mapOverlay.classList.remove('active');
+            calOverlay.classList.remove('active');
 
             if (view === 'map') {
-                overlay.classList.add('active');
+                mapOverlay.classList.add('active');
                 document.getElementById('nav-map').classList.add('active');
                 setTimeout(() => {
                     map.invalidateSize();
-                    // Auto-load mechanics whenever map is opened
-                    if (mechanicMarkers.length === 0) {
-                        findMechanics(userLocation[0], userLocation[1]);
-                    }
+                    if (mechanicMarkers.length === 0) findMechanics(userLocation[0], userLocation[1]);
                 }, 400);
+            } else if (view === 'calendar') {
+                calOverlay.classList.add('active');
+                document.getElementById('nav-cal').classList.add('active');
+                renderCalendar();
+                renderMeetingsList();
             } else {
-                overlay.classList.remove('active');
                 document.getElementById('nav-dash').classList.add('active');
             }
         }
@@ -1488,17 +2202,35 @@
             scene.add(new THREE.Line(geo, linesMat));
         });
 
+        // Tracks which bike (if any) is currently in alert state
+        let alertBikeName = null;
+        let alertPulseT = 0;
+
         function animate3D() {
             requestAnimationFrame(animate3D);
             core.rotation.x += 0.003;
             core.rotation.y += 0.007;
             innerCore.rotation.y -= 0.011;
 
+            alertPulseT += 0.08;
+
             Object.values(bikes).forEach(bike => {
                 bike.userData.angle += 0.004;
                 bike.position.x = Math.cos(bike.userData.angle) * orbitRadius;
                 bike.position.z = Math.sin(bike.userData.angle) * orbitRadius;
                 bike.rotation.y = -bike.userData.angle;
+
+                // Pulse the alert bike: scale up and down, flash red bright
+                if (alertBikeName && bike.userData.name === alertBikeName) {
+                    const pulse = 1.0 + 0.45 * Math.abs(Math.sin(alertPulseT));
+                    bike.scale.set(pulse, pulse * 1.8, pulse);
+                    // Oscillate between bright red and dark red
+                    const rIntensity = Math.floor(180 + 75 * Math.abs(Math.sin(alertPulseT)));
+                    bike.material.color.setRGB(rIntensity / 255, 0.0, 0.0);
+                } else {
+                    // Ensure non-alert bikes stay at normal scale
+                    bike.scale.set(1, 1, 1);
+                }
             });
             renderer.render(scene, camera);
         }
@@ -1687,7 +2419,7 @@
                     const controller = new AbortController();
                     setTimeout(() => controller.abort(), 8000);
                     const res = await fetch(
-                        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&viewbox=${lng-0.2},${lat+0.2},${lng+0.2},${lat-0.2}&bounded=1&limit=8`,
+                        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&viewbox=${lng - 0.2},${lat + 0.2},${lng + 0.2},${lat - 0.2}&bounded=1&limit=8`,
                         { headers: { 'Accept-Language': 'en' } }
                     );
                     const data = await res.json();
@@ -1708,7 +2440,7 @@
         function generateFallbackMechanics(lat, lng) {
             // Synthetic nearby placeholders so UI never shows empty
             const names = ['City Auto Works', 'QuickFix Garage', 'Highway Motors', 'Express Auto Care',
-                           'ProTech Service', 'Elite Car Repair', 'FastLane Workshop', 'Reliable Auto Hub'];
+                'ProTech Service', 'Elite Car Repair', 'FastLane Workshop', 'Reliable Auto Hub'];
             return names.map((name, i) => {
                 const angle = (i / names.length) * Math.PI * 2;
                 const r = 0.005 + Math.random() * 0.025;
@@ -1888,9 +2620,11 @@
             addLog('🔍 Scanning fleet...', 'info-log');
             progressFill.style.width = '0%';
 
-            // Reset all cards
+            // Reset all cards and 3D state
+            alertBikeName = null;
             users.forEach(name => {
                 bikes[name].material.color.setHex(0xf0a500);
+                bikes[name].scale.set(1, 1, 1);
                 document.getElementById(`card-${name}`).classList.remove('alert');
                 document.getElementById(`status-${name}`).textContent = 'ACTIVE';
             });
@@ -1933,6 +2667,9 @@
                     if (speedEl) speedEl.textContent = vehicleData[owner].speed + 'km/h';
 
                     bikes[owner].material.color.setHex(color);
+                    // Activate pulsing red 3D animation on the alert bike
+                    alertBikeName = owner;
+                    alertPulseT = 0;
                     document.getElementById(`card-${owner}`).classList.add('alert');
                     document.getElementById(`status-${owner}`).textContent = `⚠ ${issue.toUpperCase()} (${probPct}%)`;
 
@@ -1952,7 +2689,7 @@
                             <b style="font-size:1.1em">🚗 ${owner}</b><br>
                             <span style="color:#ff3b3b">⚠ ${issue}</span><br><br>
                             ⛽ Fuel: <b>${d.fuel}%</b><br>
-                            🌡 Engine: <b style="color:${isCritical?'#ff3b3b':'#ffa502'}">${d.temp}°C</b><br>
+                            🌡 Engine: <b style="color:${isCritical ? '#ff3b3b' : '#ffa502'}">${d.temp}°C</b><br>
                             🚀 Speed: <b>${d.speed} km/h</b><br>
                             🔋 Battery: <b>${d.battery}%</b><br>
                             📊 Failure Risk: <b>${probPct}%</b>
@@ -1964,6 +2701,8 @@
                     if (isCritical || isWarning) {
                         const ll = marker?.getLatLng();
                         if (ll) findMechanics(ll.lat, ll.lng);
+                        // Auto-schedule post-call meeting
+                        autoScheduleMeeting(owner, issue, risk, new Date());
                     }
 
                     speakAlert(data.data.voice_script || `Alert for ${owner}. ${issue} detected. Risk level ${risk}.`, owner, issue, audio_url);
@@ -1993,6 +2732,227 @@
                 if (!audioUnlocked) unlockAudio();
             }, { once: true });
         });
+        // ── MEETING SCHEDULER ─────────────────────────────────────
+        const scheduledMeetings = []; // { id, person, date, time, issue, risk, type:'auto'|'manual', notes }
+        let calViewYear, calViewMonth, selectedCalDay = null;
+
+        (function initCalDate() {
+            const now = new Date();
+            calViewYear = now.getFullYear();
+            calViewMonth = now.getMonth();
+            // Pre-fill today in the new meeting form
+            const todayStr = now.toISOString().split('T')[0];
+            document.getElementById('meeting-date').value = todayStr;
+            // Populate person dropdown
+            const sel = document.getElementById('meeting-person');
+            users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u; opt.textContent = u;
+                sel.appendChild(opt);
+            });
+        })();
+
+        function shiftMonth(dir) {
+            calViewMonth += dir;
+            if (calViewMonth > 11) { calViewMonth = 0; calViewYear++; }
+            if (calViewMonth < 0) { calViewMonth = 11; calViewYear--; }
+            renderCalendar();
+        }
+
+        function renderCalendar() {
+            const MONTHS = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE',
+                'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+            document.getElementById('cal-month-label').textContent =
+                `${MONTHS[calViewMonth]} ${calViewYear}`;
+
+            const grid = document.getElementById('cal-days-grid');
+            grid.innerHTML = '';
+
+            const firstDay = new Date(calViewYear, calViewMonth, 1).getDay();
+            const daysInMonth = new Date(calViewYear, calViewMonth + 1, 0).getDate();
+            const daysInPrev = new Date(calViewYear, calViewMonth, 0).getDate();
+            const today = new Date();
+
+            // Prev-month filler
+            for (let i = firstDay - 1; i >= 0; i--) {
+                const d = document.createElement('div');
+                d.className = 'cal-day other-month';
+                d.innerHTML = `<div class="cal-day-num">${daysInPrev - i}</div>`;
+                grid.appendChild(d);
+            }
+
+            // Current month days
+            for (let day = 1; day <= daysInMonth; day++) {
+                const d = document.createElement('div');
+                d.className = 'cal-day';
+                const dateStr = `${calViewYear}-${String(calViewMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+                const isToday = today.getFullYear() === calViewYear && today.getMonth() === calViewMonth && today.getDate() === day;
+                if (isToday) d.classList.add('today');
+                if (selectedCalDay === dateStr) d.classList.add('selected');
+
+                const dayMeetings = scheduledMeetings.filter(m => m.date === dateStr);
+                if (dayMeetings.length > 0) {
+                    const hasAlert = dayMeetings.some(m => m.type === 'auto');
+                    d.classList.add(hasAlert ? 'has-alert-meeting' : 'has-meeting');
+                }
+
+                d.innerHTML = `<div class="cal-day-num">${day}</div>`;
+                dayMeetings.slice(0, 2).forEach(m => {
+                    const chip = document.createElement('div');
+                    chip.className = 'cal-meeting-chip' + (m.type === 'auto' ? ' alert-chip' : '');
+                    chip.textContent = m.person.toUpperCase();
+                    d.appendChild(chip);
+                });
+
+                d.onclick = () => {
+                    selectedCalDay = dateStr;
+                    document.getElementById('meeting-date').value = dateStr;
+                    renderCalendar();
+                    renderMeetingsList(dateStr);
+                    const label = `${day} ${['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][calViewMonth]} ${calViewYear}`;
+                    document.getElementById('cal-day-label').textContent = label;
+                };
+                grid.appendChild(d);
+            }
+
+            // Next-month filler (fill to complete 6 rows = 42 cells)
+            const totalCells = firstDay + daysInMonth;
+            const remaining = (Math.ceil(totalCells / 7) * 7) - totalCells;
+            for (let i = 1; i <= remaining; i++) {
+                const d = document.createElement('div');
+                d.className = 'cal-day other-month';
+                d.innerHTML = `<div class="cal-day-num">${i}</div>`;
+                grid.appendChild(d);
+            }
+
+            updateCalBadge();
+        }
+
+        function renderMeetingsList(filterDate) {
+            const list = document.getElementById('cal-meetings-list');
+            const meetings = filterDate
+                ? scheduledMeetings.filter(m => m.date === filterDate)
+                : [...scheduledMeetings].sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+            document.getElementById('cal-meetings-count').textContent = meetings.length;
+
+            if (meetings.length === 0) {
+                list.innerHTML = `<div style="text-align:center;padding:30px 20px;color:var(--text-muted);font-family:'Share Tech Mono',monospace;font-size:0.65em;letter-spacing:0.08em;line-height:1.8;">NO MEETINGS<br>FOR THIS DAY</div>`;
+                return;
+            }
+
+            list.innerHTML = '';
+            meetings.forEach(m => {
+                const item = document.createElement('div');
+                item.className = 'meeting-item' + (m.type === 'auto' ? ' alert-meeting' : '');
+                const dateObj = new Date(m.date + 'T' + m.time);
+                const dateLabel = dateObj.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+                item.innerHTML = `
+                    <button class="meeting-delete" onclick="deleteMeeting('${m.id}',event)">✕</button>
+                    <div class="meeting-time">${m.time} · ${dateLabel}</div>
+                    <div class="meeting-person">${m.person.toUpperCase()}</div>
+                    <div class="meeting-issue">${m.issue || 'General Review'}</div>
+                    ${m.notes ? `<div class="meeting-issue" style="margin-top:3px;color:var(--text-dim);">📝 ${m.notes}</div>` : ''}
+                    <span class="meeting-badge ${m.type === 'auto' ? 'auto' : 'manual'}">
+                        ${m.type === 'auto' ? '⚠ AUTO-SCHEDULED (ALERT)' : '📅 MANUAL'}
+                    </span>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function updateCalBadge() {
+            const total = scheduledMeetings.length;
+            document.getElementById('cal-total-badge').textContent = `${total} MEETING${total !== 1 ? 'S' : ''}`;
+            const badge = document.getElementById('nav-meeting-badge');
+            badge.classList.toggle('visible', total > 0);
+        }
+
+        function autoScheduleMeeting(person, issue, risk, date) {
+            // Schedule a meeting 1 hour later (or next 9 AM if late)
+            const now = date || new Date();
+            let meetDate = new Date(now);
+            meetDate.setMinutes(0); meetDate.setSeconds(0);
+            // Add 1 hour
+            meetDate.setHours(meetDate.getHours() + 1);
+            // If past 6 PM, schedule for next morning 9 AM
+            if (meetDate.getHours() >= 18) {
+                meetDate.setDate(meetDate.getDate() + 1);
+                meetDate.setHours(9); meetDate.setMinutes(0);
+            }
+            const dateStr = meetDate.toISOString().split('T')[0];
+            const timeStr = `${String(meetDate.getHours()).padStart(2, '0')}:${String(meetDate.getMinutes()).padStart(2, '0')}`;
+
+            const meeting = {
+                id: `mtg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                person, issue, risk,
+                date: dateStr,
+                time: timeStr,
+                type: 'auto',
+                notes: `Auto-scheduled after ${risk.toUpperCase()} alert detection`
+            };
+            scheduledMeetings.push(meeting);
+            updateCalBadge();
+
+            // Show notification toast
+            const dateObj = new Date(dateStr + 'T' + timeStr);
+            const label = dateObj.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+            document.getElementById('meeting-toast-body').textContent =
+                `Meeting with ${person.toUpperCase()} scheduled for ${label} at ${timeStr}`;
+            document.getElementById('meeting-toast-sub').textContent =
+                `ISSUE: ${issue.toUpperCase()} · RISK: ${risk.toUpperCase()}`;
+            const toast = document.getElementById('meeting-toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 5000);
+
+            // Prominent green entry in the system log
+            addLog(`📅 MTG SCHEDULED → ${person.toUpperCase()} | ${dateStr} @ ${timeStr} | ${risk.toUpperCase()} ALERT`, 'meeting-log');
+            return meeting;
+        }
+
+        function scheduleManualMeeting() {
+            const person = document.getElementById('meeting-person').value;
+            const date = document.getElementById('meeting-date').value;
+            const time = document.getElementById('meeting-time').value || '09:00';
+            const notes = document.getElementById('meeting-notes').value;
+            if (!person || !date) {
+                addLog('⚠ Please select a person and date');
+                return;
+            }
+            const d = vehicleData[person] || {};
+            const meeting = {
+                id: `mtg-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                person, issue: d.issue || 'General Review',
+                risk: d.risk || 'low',
+                date, time, type: 'manual', notes
+            };
+            scheduledMeetings.push(meeting);
+            updateCalBadge();
+
+            // Show toast
+            document.getElementById('meeting-toast-body').textContent =
+                `Meeting with ${person.toUpperCase()} scheduled for ${date} at ${time}`;
+            document.getElementById('meeting-toast-sub').textContent = notes ? `📝 ${notes}` : 'MANUAL SCHEDULE';
+            const toast = document.getElementById('meeting-toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 4000);
+
+            addLog(`📅 Meeting scheduled: ${person} on ${date} at ${time}`, 'info-log');
+            document.getElementById('meeting-notes').value = '';
+            renderCalendar();
+            renderMeetingsList(selectedCalDay || undefined);
+        }
+
+        function deleteMeeting(id, evt) {
+            evt.stopPropagation();
+            const idx = scheduledMeetings.findIndex(m => m.id === id);
+            if (idx > -1) scheduledMeetings.splice(idx, 1);
+            updateCalBadge();
+            renderCalendar();
+            renderMeetingsList(selectedCalDay || undefined);
+        }
+
         // ── VEHICLE DETAIL PANEL ──────────────────────────────────
         function openVehiclePanel(name) {
             const d = vehicleData[name];
@@ -2039,6 +2999,23 @@
                     const marker = fleetMarkers[name];
                     if (marker) { map.setView(marker.getLatLng(), 15); marker.openPopup(); }
                 }, 450);
+            };
+
+            // Schedule meeting button
+            document.getElementById('vp-schedule-btn').onclick = () => {
+                closeVehiclePanel();
+                const d = vehicleData[name];
+                const meeting = autoScheduleMeeting(
+                    name,
+                    d.issue || 'General Review',
+                    d.risk || 'low',
+                    new Date()
+                );
+                // Pre-select on calendar
+                selectedCalDay = meeting.date;
+                calViewYear = parseInt(meeting.date.split('-')[0]);
+                calViewMonth = parseInt(meeting.date.split('-')[1]) - 1;
+                toggleView('calendar');
             };
 
             document.getElementById('vehicle-panel').classList.add('open');
