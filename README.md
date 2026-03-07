@@ -138,6 +138,16 @@ Predicts possible **vehicle component failures**
 
 Helps users take preventive maintenance actions 
 
+### 📅 Maintenance Scheduler
+
+Integrated calendar system for vehicle service scheduling
+
+Automatically schedules a maintenance appointment when a critical issue is detected
+
+Users can manually add maintenance appointments
+
+Helps maintain a regular vehicle service history
+
 ### 🎙️ Voice Response System 
 
 Generates voice responses using text-to-speech
