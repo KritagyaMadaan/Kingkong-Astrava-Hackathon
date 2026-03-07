@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fleet Brain — AI Voice Support</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #0a0c0f;
+            --steel: #11141a;
+            --green: #00ff88;
+            --amber: #f0a500;
+            --red: #ff3b3b;
+            --text: #c8cdd6;
+            --dim: #6b7280;
+            --border: rgba(255, 255, 255, 0.07);
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Rajdhani', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0, 255, 136, 0.06) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 500px;
+            background: rgba(17, 20, 26, 0.97);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            border-radius: 20px;
+            padding: 28px 26px;
+            box-shadow: 0 0 60px rgba(0, 255, 136, 0.08), 0 20px 60px rgba(0, 0, 0, 0.6);
+        }
+
+        .logo-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 18px;
+        }
+
+        .logo {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.65em;
+            letter-spacing: 0.25em;
+            color: var(--green);
+            opacity: 0.7;
+        }
+
+        .badge {
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.55em;
+            letter-spacing: 0.1em;
+            background: rgba(0, 255, 136, 0.1);
+            border: 1px solid rgba(0, 255, 136, 0.25);
+            color: var(--green);
+        }
+
+        .title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.3em;
+            font-weight: 700;
+            color: var(--green);
+            letter-spacing: 0.06em;
+            margin-bottom: 4px;
+        }
+
+        .subtitle {
+            font-size: 0.82em;
+            color: var(--dim);
+        }
+
+        /* Alert strip */
+        .alert-strip {
+            background: rgba(255, 59, 59, 0.06);
+            border: 1px solid rgba(255, 59, 59, 0.2);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin: 16px 0;
+        }
+
+        .as-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.5em;
+            letter-spacing: 0.15em;
+            color: var(--dim);
+            margin-bottom: 4px;
+        }
+
+        .as-issue {
+            font-size: 0.92em;
+            font-weight: 700;
+            color: var(--red);
+        }
+
+        .as-meta {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.55em;
+            letter-spacing: 0.06em;
+            color: var(--dim);
+            margin-top: 4px;
+        }
+
+        /* Conversation */
+        .convo {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 12px;
+            height: 220px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 14px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--border) transparent;
+        }
+
+        .msg {
+            border-radius: 10px;
+            padding: 9px 13px;
+            font-size: 0.875em;
+            line-height: 1.5;
+            max-width: 88%;
+        }
+
+        .msg.driver {
+            background: rgba(240, 165, 0, 0.1);
+            border: 1px solid rgba(240, 165, 0, 0.2);
+            color: var(--amber);
+            align-self: flex-start;
+        }
+
+        .msg.ai {
+            background: rgba(0, 255, 136, 0.08);
+            border: 1px solid rgba(0, 255, 136, 0.2);
+            color: #a0ffd4;
+            align-self: flex-end;
+        }
+
+        .msg-lbl {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.56em;
+            letter-spacing: 0.08em;
+            opacity: 0.6;
+            margin-bottom: 3px;
+        }
+
+        .empty {
+            text-align: center;
+            color: var(--dim);
+            font-size: 0.68em;
+            font-family: 'Share Tech Mono', monospace;
+            letter-spacing: 0.08em;
+            margin: auto;
+            padding: 20px 0;
+        }
+
+        /* Mic area */
+        .mic-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+        }
+
+        .mic-btn {
+            width: 78px;
+            height: 78px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            cursor: pointer;
+            transition: all 0.25s;
+            background: rgba(0, 255, 136, 0.08);
+            border: 2px solid rgba(0, 255, 136, 0.35);
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .mic-btn:active,
+        .mic-btn.pressed {
+            transform: scale(0.92);
+            background: rgba(255, 59, 59, 0.2);
+            border-color: var(--red);
+            box-shadow: 0 0 24px rgba(255, 59, 59, 0.35);
+        }
+
+        .mic-btn.listening {
+            background: rgba(255, 59, 59, 0.15);
+            border-color: var(--red);
+            animation: mpulse 1s ease-in-out infinite;
+        }
+
+        .mic-btn.thinking {
+            background: rgba(240, 165, 0, 0.1);
+            border-color: var(--amber);
+            animation: mpulse-a 0.7s ease-in-out infinite;
+            cursor: not-allowed;
+        }
+
+        .mic-btn.speaking {
+            background: rgba(0, 255, 136, 0.1);
+            border-color: var(--green);
+            animation: mpulse-g 0.8s ease-in-out infinite;
+            cursor: not-allowed;
+        }
+
+        @keyframes mpulse {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 59, 59, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 12px rgba(255, 59, 59, 0);
+            }
+        }
+
+        @keyframes mpulse-a {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(240, 165, 0, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 12px rgba(240, 165, 0, 0);
+            }
+        }
+
+        @keyframes mpulse-g {
+
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.4);
+            }
+
+            50% {
+                box-shadow: 0 0 0 12px rgba(0, 255, 136, 0);
+            }
+        }
+
+        .mic-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.62em;
+            letter-spacing: 0.1em;
+            color: var(--dim);
+            text-align: center;
+        }
+
+        /* Status */
+        .status-row {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 0.58em;
+            letter-spacing: 0.07em;
+            color: var(--dim);
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 7px 12px;
+            margin-top: 4px;
+        }
+
+        .sdot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--dim);
+            flex-shrink: 0;
+        }
+
+        .sdot.g {
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+
+        .sdot.r {
+            background: var(--red);
+            box-shadow: 0 0 6px var(--red);
+            animation: mpulse 1s infinite;
+        }
+
+        .sdot.a {
+            background: var(--amber);
+            box-shadow: 0 0 6px var(--amber);
+        }
+
+        /* Start button */
+        .start-btn {
+            width: 100%;
+            padding: 13px;
+            margin-top: 14px;
+            background: linear-gradient(135deg, rgba(0, 255, 136, 0.15), rgba(0, 255, 136, 0.05));
+            border: 1px solid rgba(0, 255, 136, 0.35);
+            color: var(--green);
+            border-radius: 10px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.7em;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .start-btn:hover {
+            background: rgba(0, 255, 136, 0.25);
+        }
+
+        .start-btn:disabled {
+            opacity: 0.35;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="card">
+        <div class="logo-row">
+            <div class="logo">FLEET BRAIN</div>
+            <div class="badge">🤖 AI SUPPORT</div>
+        </div>
+        <div class="title">VOICE ASSISTANT</div>
+        <div class="subtitle">Speak with Fleet AI about your vehicle alert</div>
+
+        <div class="alert-strip">
+            <div class="as-label">DETECTED ALERT</div>
+            <div class="as-issue" id="ui-issue">—</div>
+            <div class="as-meta">DRIVER: <span id="ui-owner">—</span> &nbsp;·&nbsp; RISK: <span id="ui-risk">—</span>
+            </div>
+        </div>
+
+        <div class="convo" id="convo">
+            <div class="empty" id="empty-msg">Press START, then tap 🎙 to speak</div>
+        </div>
+
+        <div class="status-row">
+            <div class="sdot" id="sdot"></div>
+            <span id="stext">PRESS START TO BEGIN</span>
+        </div>
+
+        <div class="mic-area" id="mic-area" style="display:none">
+            <div class="mic-btn" id="mic-btn" title="Tap to speak">🎙</div>
+            <div class="mic-label" id="mic-label">TAP TO SPEAK</div>
+        </div>
+
+        <button class="start-btn" id="start-btn" onclick="startSession()">▶ START VOICE SESSION</button>
+    </div>
+
+    <script>
+        // ── URL params ────────────────────────────────────────────────────────────
+        const P = new URLSearchParams(location.search);
+        const OWNER = P.get('owner') || 'Driver';
+        const ISSUE = decodeURIComponent(P.get('issue') || 'Vehicle Alert');
+        const RISK = P.get('risk') || 'warning';
+        const BACKEND = P.get('backend') || 'http://localhost:5000';
+
+        document.getElementById('ui-owner').textContent = OWNER.toUpperCase();
+        document.getElementById('ui-issue').textContent = ISSUE;
+        document.getElementById('ui-risk').textContent = RISK.toUpperCase();
+
+        // ── State ─────────────────────────────────────────────────────────────────
+        let history = [];
+        let canSpeak = false;   // user can tap mic
+        let busy = false;   // AI is thinking/speaking
+        let recognition = null;
+        const synth = window.speechSynthesis;
+        let voices = [];
+
+        // Load voices (Chrome needs a moment)
+        const loadVoices = () => { voices = synth.getVoices(); };
+        loadVoices();
+        if (!voices.length) synth.onvoiceschanged = loadVoices;
+
+        // ── UI helpers ────────────────────────────────────────────────────────────
+        function setStatus(text, dotClass = '') {
+            document.getElementById('stext').textContent = text;
+            const d = document.getElementById('sdot');
+            d.className = 'sdot ' + dotClass;
+        }
+        function setMic(state) {
+            const btn = document.getElementById('mic-btn');
+            const lbl = document.getElementById('mic-label');
+            btn.className = 'mic-btn ' + state;
+            const labels = {
+                '': ['🎙', 'TAP TO SPEAK'],
+                listening: ['🔴', 'LISTENING — SPEAK NOW'],
+                thinking: ['⏳', 'AI IS THINKING...'],
+                speaking: ['🔊', 'AI IS SPEAKING...'],
+            };
+            const [icon, text] = labels[state] || labels[''];
+            btn.textContent = icon;
+            lbl.textContent = text;
+        }
+        function addMsg(role, text) {
+            document.getElementById('empty-msg')?.remove();
+            const convo = document.getElementById('convo');
+            const d = document.createElement('div');
+            d.className = 'msg ' + role;
+            d.innerHTML = `<div class="msg-lbl">${role === 'driver' ? '🧑 ' + OWNER.toUpperCase() : '🤖 FLEET AI'}</div>${text}`;
+            convo.appendChild(d);
+            convo.scrollTop = convo.scrollHeight;
+        }
+
+        // ── Speak via browser TTS — reliable polling approach ─────────────────────
+        function speakText(text, onDone) {
+            busy = true;
+            canSpeak = false;
+            setMic('speaking');
+            setStatus('FLEET AI IS SPEAKING...', 'g');
+
+            // Cancel any ongoing speech first
+            synth.cancel();
+
+            const utt = new SpeechSynthesisUtterance(text);
+            const preferred = voices.find(v => v.lang.startsWith('en') && /Google|Microsoft/.test(v.name))
+                || voices.find(v => v.lang.startsWith('en'))
+                || voices[0];
+            if (preferred) utt.voice = preferred;
+            utt.rate = 1.05; utt.pitch = 1.0; utt.volume = 1.0;
+
+            let done = false;
+            const finish = () => {
+                if (done) return;
+                done = true;
+                busy = false;
+                canSpeak = true;
+                setMic('');
+                setStatus('YOUR TURN — TAP 🎙 TO SPEAK', 'g');
+                if (onDone) onDone();
+            };
+
+            utt.onend = finish;
+            utt.onerror = finish;  // also finish on error
+
+            synth.speak(utt);
+
+            // Fallback: Chrome sometimes doesn't fire onend. Poll speaking state.
+            const poll = setInterval(() => {
+                if (!synth.speaking && !synth.pending) {
+                    clearInterval(poll);
+                    finish();
+                }
+            }, 400);
+            // Safety timeout: max 30 seconds of speaking
+            setTimeout(() => { clearInterval(poll); finish(); }, 30000);
+        }
+
+        // ── Send message to LLM ───────────────────────────────────────────────────
+        async function sendToAI(userText) {
+            busy = true; canSpeak = false;
+            setMic('thinking');
+            setStatus('FLEET AI IS THINKING...', 'a');
+
+            try {
+                const res = await fetch(`${BACKEND}/api/voice-chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ owner: OWNER, issue: ISSUE, risk: RISK, message: userText, history })
+                });
+                const data = await res.json();
+                const reply = data.reply || 'Sorry, I could not process that. Please try again.';
+
+                history.push({ role: 'user', content: userText });
+                history.push({ role: 'assistant', content: reply });
+                addMsg('ai', reply);
+                speakText(reply);   // speak, then re-enable mic via the finish() callback
+            } catch {
+                busy = false; canSpeak = true;
+                setMic('');
+                setStatus('⚠ SERVER ERROR — TAP 🎙 TO RETRY', 'r');
+            }
+        }
+
+        // ── Listen for one utterance ──────────────────────────────────────────────
+        function listenOnce() {
+            if (!canSpeak || busy) return;
+            if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+                setStatus('⚠ VOICE NOT SUPPORTED — USE CHROME', 'r');
+                return;
+            }
+
+            canSpeak = false;
+            busy = true;
+            setMic('listening');
+            setStatus('🎙 LISTENING — SPEAK NOW...', 'r');
+
+            const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SR();
+            recognition.lang = 'en-IN';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onresult = (e) => {
+                const text = e.results[0][0].transcript.trim();
+                if (!text) { resetToIdle(); return; }
+                addMsg('driver', text);
+                sendToAI(text);
+            };
+
+            recognition.onerror = (e) => {
+                console.warn('SR error:', e.error);
+                resetToIdle();
+                if (e.error === 'no-speech') {
+                    setStatus('NO SPEECH DETECTED — TAP 🎙 TO TRY AGAIN', '');
+                } else if (e.error === 'not-allowed') {
+                    setStatus('⚠ MICROPHONE ACCESS DENIED', 'r');
+                }
+            };
+
+            recognition.onend = () => {
+                // If no result was captured, just go back to idle
+                if (busy && !document.querySelector('.msg.driver:last-child')) {
+                    resetToIdle();
+                }
+            };
+
+            recognition.start();
+        }
+
+        function resetToIdle() {
+            busy = false; canSpeak = true;
+            setMic('');
+            setStatus('TAP 🎙 TO SPEAK', 'g');
+        }
+
+        // ── Start session ─────────────────────────────────────────────────────────
+        async function startSession() {
+            document.getElementById('start-btn').disabled = true;
+            document.getElementById('start-btn').textContent = 'CONNECTING...';
+            document.getElementById('mic-area').style.display = 'flex';
+            setStatus('CONNECTING TO FLEET AI...', 'a');
+            setMic('thinking');
+
+            try {
+                const res = await fetch(`${BACKEND}/api/voice-chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ owner: OWNER, issue: ISSUE, risk: RISK, message: '__GREET__', history: [] })
+                });
+                const data = await res.json();
+                const reply = data.reply || `Hello ${OWNER}, I'm your Fleet AI. I can see a ${RISK} alert: ${ISSUE}. How can I help?`;
+
+                history.push({ role: 'assistant', content: reply });
+                addMsg('ai', reply);
+                document.getElementById('start-btn').style.display = 'none';
+                speakText(reply);  // after speaking → canSpeak=true, mic re-enables
+            } catch {
+                document.getElementById('start-btn').disabled = false;
+                document.getElementById('start-btn').textContent = '▶ START VOICE SESSION';
+                setStatus('⚠ CANNOT REACH SERVER — IS app.py RUNNING?', 'r');
+                setMic('');
+                document.getElementById('mic-area').style.display = 'none';
+            }
+        }
+
+        // ── Mic button tap → listen ───────────────────────────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('mic-btn').addEventListener('click', () => {
+                if (!busy && canSpeak) listenOnce();
+            });
+        });
+    </script>
+</body>
+
+</html>
