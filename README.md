@@ -1,7 +1,5 @@
 # **Working project Demo / UI Preview**
 
-## 🎥 KingKong Fleet AI Demo
-
 <p align="center">
   <a href="https://youtu.be/NpFsPlzFudA">
     <img src="https://img.youtube.com/vi/NpFsPlzFudA/maxresdefault.jpg" width="700">
