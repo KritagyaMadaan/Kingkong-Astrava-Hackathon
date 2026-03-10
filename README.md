@@ -153,13 +153,13 @@ The system can automatically call mechanics using AI agents.
 
 Workflow:
 
-    AI detects a vehicle issue
+     AI detects a vehicle issue
 
-    Finds nearby mechanic
+     Finds nearby mechanic
 
-    Calls the mechanic automatically
+     Calls the mechanic automatically
 
-    Books an appointment
+     Books an appointment
 
      Sends confirmation to the driver
 
