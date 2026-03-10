@@ -1,6 +1,12 @@
 # **Working project Demo / UI Preview**
 
-(https://img.youtube.com/vi/NpFsPlzFudA/0.jpg)](https://youtu.be/NpFsPlzFudA)
+## 🎥 KingKong Fleet AI Demo
+
+<p align="center">
+  <a href="https://youtu.be/NpFsPlzFudA">
+    <img src="https://img.youtube.com/vi/NpFsPlzFudA/maxresdefault.jpg" width="700">
+  </a>
+</p>
 
 ## Calling Feature
 
