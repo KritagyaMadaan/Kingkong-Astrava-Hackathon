@@ -1,7 +1,7 @@
 # **Working project Demo / UI Preview**
 
 
-https://github.com/user-attachments/assets/fa373b6b-584b-4ece-99ae-18a2674e00ee
+https://youtu.be/NpFsPlzFudA
 
 
 # **Autonomous Predictive Maintenance for Vehicles — Agentic AI System**
