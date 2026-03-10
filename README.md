@@ -147,6 +147,25 @@ Users can manually add maintenance appointments
 
 Helps maintain a regular vehicle service history
 
+### 📞 Automated Calling Feature
+
+The system can automatically call mechanics using AI agents.
+
+Workflow:
+
+    AI detects a vehicle issue
+
+    Finds nearby mechanic
+
+    Calls the mechanic automatically
+
+    Books an appointment
+
+     Sends confirmation to the driver
+
+This removes the need for manual phone calls during emergencies.
+
+
 ### 🎙️ Voice Response System 
 
 Generates voice responses using text-to-speech
