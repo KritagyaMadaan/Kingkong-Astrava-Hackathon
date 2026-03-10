@@ -166,11 +166,19 @@ Workflow:
 This removes the need for manual phone calls during emergencies.
 
 
-### 🎙️ Voice Response System 
+### 🎙️ AI Voice Assistant
 
-Generates voice responses using text-to-speech
+The platform includes an AI-powered voice assistant that helps drivers understand and resolve vehicle issues in real time.
 
-Makes the system more user-friendly, especially during emergencies 
+Instead of checking dashboards or reading error logs, drivers can simply talk to the assistant.
+
+How it Works
+
+    The system detects a vehicle issue using predictive maintenance AI.
+
+    The voice assistant informs the driver about the problem.
+
+    The assistant suggests possible solutions.
 
 
 ## 🧠 Dataset Used
