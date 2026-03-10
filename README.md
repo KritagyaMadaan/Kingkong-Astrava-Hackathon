@@ -1,7 +1,6 @@
 # **Working project Demo / UI Preview**
 
-
-
+https://youtu.be/NpFsPlzFudA
 
 
 # **Autonomous Predictive Maintenance for Vehicles — Agentic AI System**
