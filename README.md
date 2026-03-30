@@ -362,3 +362,5 @@ cp .env.example .env
 
 
 Then fill in their values.
+
+Contributor: Piyush Singh
